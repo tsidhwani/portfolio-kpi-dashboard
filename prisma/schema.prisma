@@ -1,0 +1,167 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  PARTNER
+  DEAL_TEAM
+  CFO
+  ADMIN
+}
+
+enum CompanyStatus {
+  GREEN
+  YELLOW
+  RED
+}
+
+enum KpiCategory {
+  FINANCIAL
+  OPERATIONAL
+}
+
+enum KpiSource {
+  MANUAL_ENTRY
+  CFO_SUBMISSION
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  role          Role
+  authProviderId String  @unique
+  createdAt     DateTime @default(now())
+
+  // scoping: which funds/companies this user can see (empty = firm-wide, per PRD's open question in Sec 9)
+  fundAccess    FundAccess[]
+  companyAccess CompanyAccess[]
+
+  commentary    Commentary[]
+  documents     Document[]
+  auditEntries  AuditLogEntry[]
+}
+
+model Fund {
+  id          String   @id @default(cuid())
+  name        String
+  vintageYear Int
+  fundSize    Decimal
+  status      String
+  companies   PortfolioCompany[]
+  access      FundAccess[]
+  createdAt   DateTime @default(now())
+}
+
+model FundAccess {
+  id     String @id @default(cuid())
+  userId String
+  fundId String
+  user   User @relation(fields: [userId], references: [id])
+  fund   Fund @relation(fields: [fundId], references: [id])
+
+  @@unique([userId, fundId])
+}
+
+model PortfolioCompany {
+  id             String   @id @default(cuid())
+  name           String
+  industry       String
+  investmentDate DateTime
+  ownershipPct   Decimal
+  status         CompanyStatus @default(GREEN)
+
+  fundId         String
+  fund           Fund @relation(fields: [fundId], references: [id])
+
+  kpiValues      KpiValue[]
+  commentary     Commentary[]
+  documents      Document[]
+  access         CompanyAccess[]
+
+  createdAt      DateTime @default(now())
+}
+
+model CompanyAccess {
+  id        String @id @default(cuid())
+  userId    String
+  companyId String
+  user      User @relation(fields: [userId], references: [id])
+  company   PortfolioCompany @relation(fields: [companyId], references: [id])
+
+  @@unique([userId, companyId])
+}
+
+model KpiDefinition {
+  id         String   @id @default(cuid())
+  name       String
+  category   KpiCategory
+  unit       String
+  cadence    String   // e.g. "monthly"
+  appliesTo  String?  // industry filter, null = all
+  isCustom   Boolean  @default(false)
+  values     KpiValue[]
+}
+
+model KpiValue {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       PortfolioCompany @relation(fields: [companyId], references: [id])
+  kpiDefId      String
+  kpiDefinition KpiDefinition @relation(fields: [kpiDefId], references: [id])
+  period        DateTime // first-of-month marker for the reporting period
+  actual        Decimal?
+  budget        Decimal?
+  source        KpiSource
+  createdAt     DateTime @default(now())
+
+  @@unique([companyId, kpiDefId, period])
+}
+
+model Commentary {
+  id        String   @id @default(cuid())
+  companyId String
+  company   PortfolioCompany @relation(fields: [companyId], references: [id])
+  period    DateTime
+  authorId  String
+  author    User @relation(fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+  editedAt  DateTime @updatedAt
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    PortfolioCompany @relation(fields: [companyId], references: [id])
+  filename   String
+  blobUrl    String
+  uploaderId String
+  uploader   User @relation(fields: [uploaderId], references: [id])
+  category   String // board_deck | report | legal | other
+  uploadedAt DateTime @default(now())
+}
+
+// Append-only. No update/delete path should ever be exposed at the API layer.
+model AuditLogEntry {
+  id           String      @id @default(cuid())
+  actorId      String
+  actor        User @relation(fields: [actorId], references: [id])
+  action       AuditAction
+  entityType   String
+  entityId     String
+  beforeValue  Json?
+  afterValue   Json?
+  timestamp    DateTime    @default(now())
+}
