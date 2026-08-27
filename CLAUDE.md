@@ -72,6 +72,19 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-27 — Auth wired: Google OAuth, JWT sessions (no DB adapter).
+  `signIn` denies non-provisioned emails; `jwt`/`session` attach
+  id/role/fundIds/companyIds from the User row. Added `lib/prisma.ts`
+  singleton, `lib/session.ts` (`getSessionUser`/`requireSessionUser`),
+  `/login` page, next-auth type augmentation. `logAudit()` now takes an
+  optional tx client. Added `npm run db:grant -- <email> <ROLE> [companyId...]`
+  to provision real accounts (OAuth gate only admits known emails).
+  Google client ID/secret live in `.env.local`. Not yet done: route
+  middleware, per-route rbac calls (deferred to feature work).
+- 2026-08-27 — Build order step 1: schema pushed to local Postgres,
+  deterministic mock-data seed added (`npm run db:seed` / `db:reset`) —
+  3 funds, 8 companies, 6 KPIs × 12 months, commentary/documents/audit rows.
+
 ## Working agreement for future sessions
 - Read this whole file before starting any task.
 - Before ending a session, append one line to Progress Log summarizing what

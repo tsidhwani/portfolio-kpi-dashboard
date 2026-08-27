@@ -1,29 +1,39 @@
-import { PrismaClient, AuditAction } from "@prisma/client";
+import { AuditAction, Prisma } from "@prisma/client";
+import { prisma } from "./prisma";
 
-const prisma = new PrismaClient();
+type Db = Prisma.TransactionClient | typeof prisma;
 
 /**
- * Call this from inside the same transaction as any create/update/delete
- * on financial data, commentary, or documents. This table has no update
- * or delete path exposed anywhere in the app, including for Admins —
- * that's the whole point per PRD Sec 8.1.
+ * Append-only audit write. This table has no update or delete path exposed
+ * anywhere in the app, including for Admins (CLAUDE.md rule #1).
+ *
+ * Pass the transaction client so the audit row commits or rolls back with
+ * the mutation it records:
+ *
+ *   await prisma.$transaction(async (tx) => {
+ *     const value = await tx.kpiValue.update(...);
+ *     await logAudit({ ... }, tx);
+ *   });
  */
-export async function logAudit(params: {
-  actorId: string;
-  action: AuditAction;
-  entityType: string;
-  entityId: string;
-  before?: unknown;
-  after?: unknown;
-}) {
-  return prisma.auditLogEntry.create({
+export async function logAudit(
+  params: {
+    actorId: string;
+    action: AuditAction;
+    entityType: string;
+    entityId: string;
+    before?: unknown;
+    after?: unknown;
+  },
+  db: Db = prisma,
+) {
+  return db.auditLogEntry.create({
     data: {
       actorId: params.actorId,
       action: params.action,
       entityType: params.entityType,
       entityId: params.entityId,
-      beforeValue: params.before as any,
-      afterValue: params.after as any,
+      beforeValue: params.before as Prisma.InputJsonValue,
+      afterValue: params.after as Prisma.InputJsonValue,
     },
   });
 }
