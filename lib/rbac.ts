@@ -31,6 +31,16 @@ export function canEditFinancials(user: SessionUser, companyId: string): boolean
   return firmWideRoles.includes(user.role);
 }
 
+/**
+ * Fund roll-ups and other firm-level views. CFOs are company-scoped and
+ * must never see cross-company or fund-level data (CLAUDE.md "Users").
+ * If Deal Team gets scoped by coverage (the open decision), this stays a
+ * role gate and the per-fund/company checks do the narrowing.
+ */
+export function canViewFirmWide(user: SessionUser): boolean {
+  return user.role !== "CFO";
+}
+
 export function canManageUsers(user: SessionUser): boolean {
   return user.role === "ADMIN";
 }

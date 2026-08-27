@@ -72,6 +72,13 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-27 — Build order step 3: Partner read path. `/funds` roll-up
+  (per-fund status counts + additive Revenue/EBITDA/Headcount, "as of" the
+  latest month complete for all companies), `/funds/[id]` company list with
+  actual-vs-budget, `/companies/[id]` detail (6-mo KPI grid + commentary +
+  documents). New `lib/reporting.ts`, `lib/format.ts`; `canViewFirmWide()`
+  added to rbac (CFO redirected to their company). Reads gated via
+  canAccessCompany/canViewFirmWide.
 - 2026-08-27 — Build order step 2: monthly entry grid at `/entry`
   (`app/(dashboard)/`). Company + month selectors, editable actual/budget
   per KPI. Write path = `lib/kpi-entry.ts` `applyKpiEntry()` (RBAC check +

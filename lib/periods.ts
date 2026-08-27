@@ -24,6 +24,13 @@ export function periodLabel(key: string): string {
   });
 }
 
+/** Compact label, e.g. "Jul '26". */
+export function periodShortLabel(key: string): string {
+  const d = periodKeyToDate(key);
+  const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  return `${mon} '${String(d.getUTCFullYear()).slice(2)}`;
+}
+
 /** Most recent `count` months as period keys, newest first. */
 export function recentPeriodKeys(count = 15, anchor = new Date()): string[] {
   const y = anchor.getUTCFullYear();
