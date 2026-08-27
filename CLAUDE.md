@@ -72,6 +72,13 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-27 — Build order step 2: monthly entry grid at `/entry`
+  (`app/(dashboard)/`). Company + month selectors, editable actual/budget
+  per KPI. Write path = `lib/kpi-entry.ts` `applyKpiEntry()` (RBAC check +
+  KpiValue upsert + AuditLogEntry in one tx; CFO writes tagged
+  CFO_SUBMISSION); `actions.ts` is the thin `"use server"` wrapper. Added
+  `lib/periods.ts`, `lib/companies.ts`, `(dashboard)` layout/home. Verified
+  create/update/no-op/deny/bad-input paths.
 - 2026-08-27 — Auth wired: Google OAuth, JWT sessions (no DB adapter).
   `signIn` denies non-provisioned emails; `jwt`/`session` attach
   id/role/fundIds/companyIds from the User row. Added `lib/prisma.ts`
