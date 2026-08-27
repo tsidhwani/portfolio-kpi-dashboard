@@ -61,3 +61,22 @@ those two roles yet).
 5. Variance flagging (green/yellow/red)
 6. Admin: user management + KPI template library
 7. PDF/CSV export
+
+## Decisions Log
+(Record any open question from this file, once resolved, as a dated one-line
+entry here. Example: "2026-08-27 — RBAC scoping: Partner/Deal Team stay
+firm-wide, CFO restricted to own company. Confirmed by Tapan.")
+
+## Progress Log
+(One line per completed feature or session, most recent at the top. Keep
+entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
+Google OAuth login working, no User/role attachment yet.")
+
+## Working agreement for future sessions
+- Read this whole file before starting any task.
+- Before ending a session, append one line to Progress Log summarizing what
+  changed, and add to Decisions Log if any open question got resolved.
+- If Progress Log passes ~15 entries, condense the oldest ones into a single
+  summary line instead of deleting them, so the file doesn't bloat.
+- Never remove or contradict a Decisions Log entry without flagging it to
+  Tapan explicitly first — those are settled unless he says otherwise.
