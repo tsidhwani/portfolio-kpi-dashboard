@@ -67,11 +67,25 @@ those two roles yet).
 entry here. Example: "2026-08-27 — RBAC scoping: Partner/Deal Team stay
 firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 
+- 2026-08-31 — Variance flag thresholds (unfavorable side, % of |budget|):
+  within 5% → GREEN, 5–15% → YELLOW, >15% → RED. Company flag = worst
+  FINANCIAL-KPI flag for the period; stored `PortfolioCompany.status` is the
+  manual fallback when the period has no financial data. Placeholder numbers
+  for Phase 1 — revisit with the deal team before real data. Constants in
+  `lib/variance.ts` (`VARIANCE_THRESHOLDS`).
+
 ## Progress Log
 (One line per completed feature or session, most recent at the top. Keep
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-31 — Build order step 5: variance flagging. New `lib/variance.ts`
+  (`flagForVariance`/`rollUpFlags`/`VARIANCE_THRESHOLDS`, pure). Reporting
+  layer computes per-cell flags + a per-period company flag (worst financial
+  KPI, stored status as fallback); `getFundRollups` G/Y/R counts,
+  `/funds/[id]` status column + variance colours, and `/companies/[id]` KPI
+  grid + header badge now driven by variance. `ui.tsx` gains `flagTextClass`
+  + `VarianceLegend`. No schema change.
 - 2026-08-27 — Build order step 4: CFO restricted view. `/submit`
   single-company submission (no picker, defaults to most recent unfilled
   month), reuses EntryGrid + saveKpiValues. CFO redirected here from `/`

@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/session";
 import { getFundDetail, reportingPeriodKey } from "@/lib/reporting";
 import { periodLabel } from "@/lib/periods";
 import { formatByUnit, formatSignedPct, variancePct } from "@/lib/format";
-import { StatusBadge } from "../../ui";
+import { StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +62,7 @@ export default async function FundDetailPage({
                   </div>
                 </td>
                 <td className="py-2 pr-4">
-                  <StatusBadge status={c.status} />
+                  <StatusBadge status={c.computedStatus} />
                 </td>
                 {COLUMNS.map((col) => {
                   const m = c.metrics[col];
@@ -71,11 +71,7 @@ export default async function FundDetailPage({
                     <td key={col} className="py-2 pr-4 text-right whitespace-nowrap">
                       {formatByUnit(m?.actual ?? null, m?.unit ?? "")}
                       {v != null && (
-                        <span
-                          className={`ml-1 text-xs ${
-                            v < 0 ? "text-red-600" : "text-green-600"
-                          }`}
-                        >
+                        <span className={`ml-1 text-xs ${flagTextClass(m?.flag)}`}>
                           {formatSignedPct(v)}
                         </span>
                       )}
@@ -87,8 +83,12 @@ export default async function FundDetailPage({
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-gray-400">
-        Percentages are actual vs. budget for the period.
+      <div className="mt-3">
+        <VarianceLegend />
+      </div>
+      <p className="mt-2 text-xs text-gray-400">
+        Percentages are actual vs. budget for the period. Status is the worst
+        financial-KPI variance flag for the period (manual status as fallback).
       </p>
     </div>
   );

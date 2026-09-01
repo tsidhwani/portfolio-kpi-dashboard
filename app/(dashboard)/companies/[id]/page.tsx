@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/session";
 import { getCompanyDetail } from "@/lib/reporting";
 import { periodLabel, periodShortLabel } from "@/lib/periods";
 import { formatByUnit } from "@/lib/format";
-import { StatusBadge } from "../../ui";
+import { StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +39,7 @@ export default async function CompanyDetailPage({
       )}
       <div className="mt-1 flex items-center gap-3">
         <h1 className="text-xl font-semibold">{d.name}</h1>
-        <StatusBadge status={d.status} />
+        <StatusBadge status={d.computedStatus} />
       </div>
       <p className="mt-1 text-sm text-gray-500">
         {d.industry} ·{" "}
@@ -56,6 +56,9 @@ export default async function CompanyDetailPage({
       <h2 className="mt-6 text-sm font-semibold text-gray-700">
         KPI history — actual over budget, last {d.periodKeys.length} months
       </h2>
+      <div className="mt-1">
+        <VarianceLegend />
+      </div>
       <div className="mt-2 overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -86,7 +89,9 @@ export default async function CompanyDetailPage({
                     >
                       {cell && (cell.actual != null || cell.budget != null) ? (
                         <>
-                          <div>{formatByUnit(cell.actual, kpi.unit)}</div>
+                          <div className={flagTextClass(cell.flag)}>
+                            {formatByUnit(cell.actual, kpi.unit)}
+                          </div>
                           <div className="text-xs text-gray-400">
                             {formatByUnit(cell.budget, kpi.unit)}
                           </div>

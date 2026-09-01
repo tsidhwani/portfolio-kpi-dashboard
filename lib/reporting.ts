@@ -2,6 +2,41 @@ import type { CompanyStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { canAccessCompany, canViewFirmWide, type SessionUser } from "./rbac";
 import { dateToPeriodKey, periodKeyToDate, recentPeriodKeys } from "./periods";
+import { variancePct } from "./format";
+import {
+  flagForVariance,
+  kpiHigherIsBetter,
+  rollUpFlags,
+  type VarianceFlag,
+} from "./variance";
+
+const num = (d: unknown): number | null =>
+  d == null ? null : Number(d as number);
+
+/**
+ * Traffic-light flag for a company in one period: worst variance flag across
+ * its FINANCIAL KPIs (operational metrics are shown flagged per-cell but
+ * don't drive the roll-up). Falls back to the stored status when the period
+ * has no financial data to flag on.
+ */
+function companyPeriodFlag(
+  kpiValues: {
+    actual: unknown;
+    budget: unknown;
+    kpiDefinition: { name: string; category: string };
+  }[],
+  fallback: CompanyStatus,
+): CompanyStatus {
+  const flags = kpiValues
+    .filter((v) => v.kpiDefinition.category === "FINANCIAL")
+    .map((v) =>
+      flagForVariance(
+        variancePct(num(v.actual), num(v.budget)),
+        kpiHigherIsBetter(v.kpiDefinition.name),
+      ),
+    );
+  return rollUpFlags(flags) ?? fallback;
+}
 
 /**
  * The period to roll up "as of": the most recent month that has KPI data
@@ -69,7 +104,11 @@ export async function getFundRollups(
           status: true,
           kpiValues: {
             where: { period },
-            select: { actual: true, kpiDefinition: { select: { name: true } } },
+            select: {
+              actual: true,
+              budget: true,
+              kpiDefinition: { select: { name: true, category: true } },
+            },
           },
         },
       },
@@ -85,7 +124,7 @@ export async function getFundRollups(
     };
 
     for (const c of f.companies) {
-      statusCounts[c.status] += 1;
+      statusCounts[companyPeriodFlag(c.kpiValues, c.status)] += 1;
       for (const v of c.kpiValues) {
         const bucket = acc[v.kpiDefinition.name];
         if (!bucket || v.actual == null) continue;
@@ -111,9 +150,18 @@ export type FundCompanyRow = {
   id: string;
   name: string;
   industry: string;
-  status: CompanyStatus;
+  status: CompanyStatus; // stored/manual status
+  computedStatus: CompanyStatus; // from this period's variance, stored status as fallback
   ownershipPct: number;
-  metrics: Record<string, { actual: number | null; budget: number | null; unit: string }>;
+  metrics: Record<
+    string,
+    {
+      actual: number | null;
+      budget: number | null;
+      unit: string;
+      flag: VarianceFlag | null;
+    }
+  >;
 };
 
 export type FundDetail = {
@@ -154,7 +202,7 @@ export async function getFundDetail(
         select: {
           actual: true,
           budget: true,
-          kpiDefinition: { select: { name: true, unit: true } },
+          kpiDefinition: { select: { name: true, unit: true, category: true } },
         },
       },
     },
@@ -170,10 +218,16 @@ export async function getFundDetail(
     companies: companies.map((c) => {
       const metrics: FundCompanyRow["metrics"] = {};
       for (const v of c.kpiValues) {
+        const actual = num(v.actual);
+        const budget = num(v.budget);
         metrics[v.kpiDefinition.name] = {
-          actual: v.actual == null ? null : Number(v.actual),
-          budget: v.budget == null ? null : Number(v.budget),
+          actual,
+          budget,
           unit: v.kpiDefinition.unit,
+          flag: flagForVariance(
+            variancePct(actual, budget),
+            kpiHigherIsBetter(v.kpiDefinition.name),
+          ),
         };
       }
       return {
@@ -181,6 +235,7 @@ export async function getFundDetail(
         name: c.name,
         industry: c.industry,
         status: c.status,
+        computedStatus: companyPeriodFlag(c.kpiValues, c.status),
         ownershipPct: Number(c.ownershipPct),
         metrics,
       };
@@ -192,14 +247,21 @@ export type CompanyDetail = {
   id: string;
   name: string;
   industry: string;
-  status: CompanyStatus;
+  status: CompanyStatus; // stored/manual status
+  computedStatus: CompanyStatus; // from the latest period's variance, stored status as fallback
   ownershipPct: number;
   investmentDate: Date;
   fund: { id: string; name: string };
-  kpiDefs: { id: string; name: string; unit: string }[];
+  kpiDefs: { id: string; name: string; unit: string; category: string }[];
   periodKeys: string[]; // newest first
-  // grid[kpiDefId][periodKey] = { actual, budget }
-  grid: Record<string, Record<string, { actual: number | null; budget: number | null }>>;
+  // grid[kpiDefId][periodKey] = { actual, budget, flag }
+  grid: Record<
+    string,
+    Record<
+      string,
+      { actual: number | null; budget: number | null; flag: VarianceFlag | null }
+    >
+  >;
   commentary: { id: string; periodKey: string; body: string; author: string }[];
   documents: {
     id: string;
@@ -241,7 +303,7 @@ export async function getCompanyDetail(
   const [kpiDefs, values, commentary, documents] = await Promise.all([
     prisma.kpiDefinition.findMany({
       orderBy: [{ category: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, unit: true },
+      select: { id: true, name: true, unit: true, category: true },
     }),
     prisma.kpiValue.findMany({
       where: { companyId, period: { gte: oldest } },
@@ -271,22 +333,41 @@ export async function getCompanyDetail(
     }),
   ]);
 
+  const defById = new Map(kpiDefs.map((d) => [d.id, d]));
+
   const grid: CompanyDetail["grid"] = {};
   for (const d of kpiDefs) grid[d.id] = {};
   for (const v of values) {
     const key = dateToPeriodKey(v.period);
+    const actual = num(v.actual);
+    const budget = num(v.budget);
     if (!grid[v.kpiDefId]) grid[v.kpiDefId] = {};
     grid[v.kpiDefId][key] = {
-      actual: v.actual == null ? null : Number(v.actual),
-      budget: v.budget == null ? null : Number(v.budget),
+      actual,
+      budget,
+      flag: flagForVariance(
+        variancePct(actual, budget),
+        kpiHigherIsBetter(defById.get(v.kpiDefId)?.name ?? ""),
+      ),
     };
   }
+
+  // Company flag = worst FINANCIAL-KPI flag in the most recent period shown,
+  // stored status as the fallback when that period has nothing to flag on.
+  const latestKey = periodKeys[0];
+  const computedStatus =
+    rollUpFlags(
+      kpiDefs
+        .filter((d) => d.category === "FINANCIAL")
+        .map((d) => grid[d.id]?.[latestKey]?.flag ?? null),
+    ) ?? company.status;
 
   return {
     id: company.id,
     name: company.name,
     industry: company.industry,
     status: company.status,
+    computedStatus,
     ownershipPct: Number(company.ownershipPct),
     investmentDate: company.investmentDate,
     fund: company.fund,

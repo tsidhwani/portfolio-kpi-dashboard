@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/session";
 import { getFundRollups, reportingPeriodKey } from "@/lib/reporting";
 import { periodLabel } from "@/lib/periods";
 import { formatByUnit } from "@/lib/format";
+import { VarianceLegend } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,11 @@ export default async function FundsPage() {
       <p className="mt-1 text-sm text-gray-500">
         {periodKey ? `Roll-up as of ${periodLabel(periodKey)}` : "No KPI data yet."}
       </p>
+      {periodKey && (
+        <div className="mt-2">
+          <VarianceLegend />
+        </div>
+      )}
 
       <div className="mt-4 overflow-x-auto">
         <table className="w-full border-collapse text-sm">
