@@ -28,7 +28,15 @@ export default async function FundDetailPage({
       <Link href="/funds" className="text-sm text-blue-600 hover:underline">
         ← Funds
       </Link>
-      <h1 className="mt-1 text-xl font-semibold">{fund.name}</h1>
+      <div className="mt-1 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">{fund.name}</h1>
+        <a
+          href={`/api/export/funds/${fund.id}`}
+          className="text-sm text-blue-600 hover:underline"
+        >
+          Export CSV
+        </a>
+      </div>
       <p className="mt-1 text-sm text-gray-500">
         Vintage {fund.vintageYear} · {formatByUnit(fund.fundSize, "USD")} committed ·{" "}
         {fund.status} · as of {periodLabel(periodKey)}

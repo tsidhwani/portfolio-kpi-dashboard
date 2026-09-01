@@ -20,7 +20,19 @@ export default async function FundsPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-xl font-semibold">Funds</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Funds</h1>
+        {periodKey && (
+          <div className="flex gap-3 text-sm">
+            <a href="/api/export/funds" className="text-blue-600 hover:underline">
+              Export CSV
+            </a>
+            <Link href="/funds/report" className="text-blue-600 hover:underline">
+              Printable report
+            </Link>
+          </div>
+        )}
+      </div>
       <p className="mt-1 text-sm text-gray-500">
         {periodKey ? `Roll-up as of ${periodLabel(periodKey)}` : "No KPI data yet."}
       </p>

@@ -37,9 +37,25 @@ export default async function CompanyDetailPage({
           ← Funds
         </Link>
       )}
-      <div className="mt-1 flex items-center gap-3">
-        <h1 className="text-xl font-semibold">{d.name}</h1>
-        <StatusBadge status={d.computedStatus} />
+      <div className="mt-1 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold">{d.name}</h1>
+          <StatusBadge status={d.computedStatus} />
+        </div>
+        <div className="flex gap-3 text-sm">
+          <a
+            href={`/api/export/companies/${d.id}`}
+            className="text-blue-600 hover:underline"
+          >
+            Export CSV
+          </a>
+          <Link
+            href={`/companies/${d.id}/report`}
+            className="text-blue-600 hover:underline"
+          >
+            Printable report
+          </Link>
+        </div>
       </div>
       <p className="mt-1 text-sm text-gray-500">
         {d.industry} ·{" "}

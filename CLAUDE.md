@@ -79,6 +79,16 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-31 — Build order step 7: PDF/CSV export. CSV via route handlers
+  `/api/export/funds`, `/api/export/funds/[id]`, `/api/export/companies/[id]`
+  (session-gated; firm-wide check for the fund routes, `getCompanyDetail`'s
+  `canAccessCompany` for the company one). PDF = browser Print-to-PDF on new
+  `/funds/report` and `/companies/[id]/report` print views (`@media print`
+  rules in globals.css strip the chrome; `PrintButton` client component).
+  Pure builders + `toCsv`/`csvResponse` in `lib/export.ts`. Export links
+  added to `/funds`, `/funds/[id]`, `/companies/[id]`. No PDF dependency —
+  server-rendered PDF deferred. tsc + build clean; 19-check export harness
+  and an unauth HTTP smoke (401 / 307) passing.
 - 2026-08-31 — Build order step 6: Admin surface. `/admin` (user
   management) + `/admin/kpis` (KPI template library), ADMIN-only via
   `canManageUsers` (page redirect + re-checked in every action). New
