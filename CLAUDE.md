@@ -72,6 +72,12 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-27 — Build order step 4: CFO restricted view. `/submit`
+  single-company submission (no picker, defaults to most recent unfilled
+  month), reuses EntryGrid + saveKpiValues. CFO redirected here from `/`
+  and `/entry`; nav swapped to Submit / My Company. 14-check CFO isolation
+  matrix passing (no cross-company/fund/firm read or write, tampered
+  companyId rejected server-side, own writes tagged CFO_SUBMISSION).
 - 2026-08-27 — Build order step 3: Partner read path. `/funds` roll-up
   (per-fund status counts + additive Revenue/EBITDA/Headcount, "as of" the
   latest month complete for all companies), `/funds/[id]` company list with

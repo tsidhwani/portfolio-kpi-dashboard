@@ -20,6 +20,8 @@ export default async function EntryPage({
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  // CFOs use the dedicated single-company submission view.
+  if (user.role === "CFO") redirect("/submit");
 
   const companies = await getEditableCompanies(user);
   if (companies.length === 0) {

@@ -6,10 +6,8 @@ export default async function Home() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  // CFOs have no firm-level landing — send them straight to their company.
-  if (user.role === "CFO" && user.companyIds[0]) {
-    redirect(`/companies/${user.companyIds[0]}`);
-  }
+  // CFOs have no firm-level landing — send them to their submission view.
+  if (user.role === "CFO") redirect("/submit");
 
   return (
     <div className="mx-auto max-w-2xl">

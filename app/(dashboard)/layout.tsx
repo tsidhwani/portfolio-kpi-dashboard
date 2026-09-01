@@ -22,14 +22,30 @@ export default async function DashboardLayout({ children }: { children: ReactNod
             Portfolio KPI
           </Link>
           <nav className="flex gap-4 text-sm text-gray-600">
-            {user.role !== "CFO" && (
-              <Link href="/funds" className="hover:text-gray-900">
-                Funds
-              </Link>
+            {user.role === "CFO" ? (
+              <>
+                <Link href="/submit" className="hover:text-gray-900">
+                  Submit
+                </Link>
+                {user.companyIds[0] && (
+                  <Link
+                    href={`/companies/${user.companyIds[0]}`}
+                    className="hover:text-gray-900"
+                  >
+                    My Company
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <Link href="/funds" className="hover:text-gray-900">
+                  Funds
+                </Link>
+                <Link href="/entry" className="hover:text-gray-900">
+                  Monthly Entry
+                </Link>
+              </>
             )}
-            <Link href="/entry" className="hover:text-gray-900">
-              Monthly Entry
-            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-500">
