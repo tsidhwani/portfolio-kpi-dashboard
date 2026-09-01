@@ -31,6 +31,16 @@ export default async function Home() {
             Enter actuals &amp; budget by company and month.
           </span>
         </li>
+        {user.role === "ADMIN" && (
+          <li>
+            <Link href="/admin" className="text-blue-600 hover:underline">
+              Admin
+            </Link>
+            <span className="ml-2 text-sm text-gray-500">
+              Manage users &amp; the KPI template library.
+            </span>
+          </li>
+        )}
       </ul>
     </div>
   );

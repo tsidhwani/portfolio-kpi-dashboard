@@ -79,6 +79,18 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-08-31 — Build order step 6: Admin surface. `/admin` (user
+  management) + `/admin/kpis` (KPI template library), ADMIN-only via
+  `canManageUsers` (page redirect + re-checked in every action). New
+  `lib/admin.ts` (`upsertUser`/`upsertKpiDefinition` + reads; zod-validated,
+  transactional, audit-logged as entityType User/KpiDefinition),
+  `admin/actions.ts` thin `"use server"` wrapper, client panels. Schema:
+  `User.active` added (`db:push` run) — `false` blocks sign-in on next
+  request (wired into `lib/auth.ts` signIn + jwt); no user delete path.
+  Guards: CFO needs ≥1 company, unique email + KPI name, admin can't
+  self-demote or self-deactivate. `db:grant` now also re-activates.
+  Fund/company access assignable for all roles but still only enforced for
+  CFO (see open decision). 22-check harness against dev DB passing.
 - 2026-08-31 — Build order step 5: variance flagging. New `lib/variance.ts`
   (`flagForVariance`/`rollUpFlags`/`VARIANCE_THRESHOLDS`, pure). Reporting
   layer computes per-cell flags + a per-period company flag (worst financial

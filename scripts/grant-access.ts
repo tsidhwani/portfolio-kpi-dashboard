@@ -53,7 +53,7 @@ async function main() {
 
   const user = await prisma.user.upsert({
     where: { email: normalized },
-    update: { role },
+    update: { role, active: true }, // granting access also re-activates
     create: {
       email: normalized,
       name: normalized.split("@")[0],

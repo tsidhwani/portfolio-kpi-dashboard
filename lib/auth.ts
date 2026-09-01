@@ -38,7 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!email) return false;
 
       const dbUser = await prisma.user.findUnique({ where: { email } });
-      if (!dbUser) return false;
+      if (!dbUser || !dbUser.active) return false;
 
       // Record the real OAuth subject the first time we see this user
       // (the seed writes a placeholder authProviderId).
@@ -69,18 +69,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         select: {
           id: true,
           role: true,
+          active: true,
           fundAccess: { select: { fundId: true } },
           companyAccess: { select: { companyId: true } },
         },
       });
 
-      if (dbUser) {
+      if (dbUser && dbUser.active) {
         token.uid = dbUser.id;
         token.role = dbUser.role;
         token.fundIds = dbUser.fundAccess.map((f) => f.fundId);
         token.companyIds = dbUser.companyAccess.map((c) => c.companyId);
       } else {
-        // User was de-provisioned mid-session — strip access.
+        // User was de-provisioned or deactivated mid-session — strip access.
         delete token.uid;
         delete token.role;
         delete token.fundIds;

@@ -42,6 +42,7 @@ model User {
   email         String   @unique
   role          Role
   authProviderId String  @unique
+  active        Boolean  @default(true) // false = provisioned but blocked from signing in
   createdAt     DateTime @default(now())
 
   // scoping: which funds/companies this user can see (empty = firm-wide, per PRD's open question in Sec 9)

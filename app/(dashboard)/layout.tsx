@@ -44,6 +44,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 <Link href="/entry" className="hover:text-gray-900">
                   Monthly Entry
                 </Link>
+                {user.role === "ADMIN" && (
+                  <Link href="/admin" className="hover:text-gray-900">
+                    Admin
+                  </Link>
+                )}
               </>
             )}
           </nav>
