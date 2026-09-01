@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/session";
 import { getEditableCompanies } from "@/lib/companies";
+import { getKpiDefsFor } from "@/lib/kpi-defs";
 import {
   periodKeyToDate,
   periodLabel,
@@ -39,10 +40,8 @@ export default async function EntryPage({
     : companies[0].id;
   const periodKey = periods.includes(sp.period ?? "") ? sp.period! : periods[0];
 
-  const kpiDefs = await prisma.kpiDefinition.findMany({
-    orderBy: [{ category: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, unit: true, category: true },
-  });
+  const company = companies.find((c) => c.id === companyId)!;
+  const kpiDefs = await getKpiDefsFor(company);
 
   const existing = await prisma.kpiValue.findMany({
     where: { companyId, period: periodKeyToDate(periodKey) },
@@ -55,8 +54,6 @@ export default async function EntryPage({
       budget: v.budget == null ? "" : v.budget.toString(),
     };
   }
-
-  const company = companies.find((c) => c.id === companyId)!;
 
   return (
     <div className="mx-auto max-w-3xl">

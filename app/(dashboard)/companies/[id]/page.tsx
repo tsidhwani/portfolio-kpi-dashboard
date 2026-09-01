@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
+import { canEditCommentary, canUploadDocuments } from "@/lib/rbac";
 import { getCompanyDetail } from "@/lib/reporting";
 import { periodLabel, periodShortLabel } from "@/lib/periods";
-import { formatByUnit } from "@/lib/format";
+import { formatByUnit, formatSignedPct } from "@/lib/format";
 import { StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
+import { CommentaryEditor } from "./commentary-editor";
+import { DocumentUpload } from "./document-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +19,19 @@ const utcDate = (d: Date) =>
     timeZone: "UTC",
   });
 
+function TrendLine({
+  t,
+}: {
+  t: { mom: number | null; qoq: number | null; yoy: number | null } | undefined;
+}) {
+  if (!t || (t.mom == null && t.qoq == null && t.yoy == null)) return null;
+  const parts: string[] = [];
+  if (t.mom != null) parts.push(`MoM ${formatSignedPct(t.mom)}`);
+  if (t.qoq != null) parts.push(`QoQ ${formatSignedPct(t.qoq)}`);
+  if (t.yoy != null) parts.push(`YoY ${formatSignedPct(t.yoy)}`);
+  return <div className="text-xs font-normal text-gray-400">{parts.join(" · ")}</div>;
+}
+
 export default async function CompanyDetailPage({
   params,
 }: {
@@ -25,10 +41,18 @@ export default async function CompanyDetailPage({
   if (!user) redirect("/login");
   const { id } = await params;
 
-  const d = await getCompanyDetail(user, id, 6);
+  const d = await getCompanyDetail(user, id, 12);
   if (!d) notFound();
 
   const firmWide = user.role !== "CFO";
+  const mayComment = canEditCommentary(user, d.id);
+  const mayUpload = canUploadDocuments(user, d.id);
+
+  const myNotes: Record<string, string> = {};
+  for (const c of d.commentary) {
+    if (c.authorId === user.id) myNotes[c.periodKey] = c.body;
+  }
+  const commentPeriods = d.periodKeys.map((k) => ({ key: k, label: periodLabel(k) }));
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -93,8 +117,9 @@ export default async function CompanyDetailPage({
           <tbody>
             {d.kpiDefs.map((kpi) => (
               <tr key={kpi.id} className="border-b">
-                <td className="py-2 pr-4 whitespace-nowrap">
+                <td className="py-2 pr-4 whitespace-nowrap font-medium">
                   {kpi.name} <span className="text-gray-400">({kpi.unit})</span>
+                  <TrendLine t={d.trend[kpi.id]} />
                 </td>
                 {d.periodKeys.map((k) => {
                   const cell = d.grid[kpi.id]?.[k];
@@ -123,34 +148,52 @@ export default async function CompanyDetailPage({
           </tbody>
         </table>
       </div>
+      <p className="mt-2 text-xs text-gray-400">
+        MoM / QoQ / YoY compare the latest month&apos;s actual to 1 / 3 / 12 months prior.
+      </p>
 
       <h2 className="mt-6 text-sm font-semibold text-gray-700">Commentary</h2>
+      {mayComment && (
+        <CommentaryEditor
+          companyId={d.id}
+          periods={commentPeriods}
+          myNotes={myNotes}
+        />
+      )}
       {d.commentary.length === 0 ? (
         <p className="mt-2 text-sm text-gray-400">No commentary.</p>
       ) : (
-        <ul className="mt-2 space-y-3">
+        <ul className="mt-3 space-y-3">
           {d.commentary.map((c) => (
             <li key={c.id} className="text-sm">
               <div className="text-xs text-gray-400">
                 {periodLabel(c.periodKey)} · {c.author}
               </div>
-              <div>{c.body}</div>
+              <div className="whitespace-pre-wrap">{c.body}</div>
             </li>
           ))}
         </ul>
       )}
 
       <h2 className="mt-6 text-sm font-semibold text-gray-700">Documents</h2>
+      {mayUpload && <DocumentUpload companyId={d.id} />}
       {d.documents.length === 0 ? (
         <p className="mt-2 text-sm text-gray-400">No documents.</p>
       ) : (
-        <ul className="mt-2 space-y-1 text-sm">
+        <ul className="mt-3 space-y-1 text-sm">
           {d.documents.map((doc) => (
             <li key={doc.id} className="flex flex-wrap items-center gap-2">
               <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
                 {doc.category}
               </span>
-              <span>{doc.filename}</span>
+              <a
+                href={`/api/documents/${doc.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                {doc.filename}
+              </a>
               <span className="text-xs text-gray-400">
                 {utcDate(doc.uploadedAt)} · {doc.uploader}
               </span>

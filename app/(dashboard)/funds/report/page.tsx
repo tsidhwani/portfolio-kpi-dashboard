@@ -29,9 +29,10 @@ export default async function FundsReportPage() {
       red: acc.red + f.statusCounts.RED,
       revenue: acc.revenue + (f.revenue ?? 0),
       ebitda: acc.ebitda + (f.ebitda ?? 0),
+      netDebt: acc.netDebt + (f.netDebt ?? 0),
       headcount: acc.headcount + (f.headcount ?? 0),
     }),
-    { companies: 0, green: 0, yellow: 0, red: 0, revenue: 0, ebitda: 0, headcount: 0 },
+    { companies: 0, green: 0, yellow: 0, red: 0, revenue: 0, ebitda: 0, netDebt: 0, headcount: 0 },
   );
 
   return (
@@ -64,6 +65,7 @@ export default async function FundsReportPage() {
               <th className="py-2 pr-4 font-semibold">G / Y / R</th>
               <th className="py-2 pr-4 text-right font-semibold">Revenue</th>
               <th className="py-2 pr-4 text-right font-semibold">EBITDA</th>
+              <th className="py-2 pr-4 text-right font-semibold">Net Debt</th>
               <th className="py-2 text-right font-semibold">Headcount</th>
             </tr>
           </thead>
@@ -78,6 +80,7 @@ export default async function FundsReportPage() {
                 </td>
                 <td className="py-2 pr-4 text-right">{formatByUnit(f.revenue, "USD")}</td>
                 <td className="py-2 pr-4 text-right">{formatByUnit(f.ebitda, "USD")}</td>
+                <td className="py-2 pr-4 text-right">{formatByUnit(f.netDebt, "USD")}</td>
                 <td className="py-2 text-right">{formatByUnit(f.headcount, "FTEs")}</td>
               </tr>
             ))}
@@ -92,6 +95,7 @@ export default async function FundsReportPage() {
               </td>
               <td className="py-2 pr-4 text-right">{formatByUnit(totals.revenue, "USD")}</td>
               <td className="py-2 pr-4 text-right">{formatByUnit(totals.ebitda, "USD")}</td>
+              <td className="py-2 pr-4 text-right">{formatByUnit(totals.netDebt, "USD")}</td>
               <td className="py-2 text-right">{formatByUnit(totals.headcount, "FTEs")}</td>
             </tr>
           </tfoot>

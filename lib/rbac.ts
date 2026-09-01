@@ -32,6 +32,22 @@ export function canEditFinancials(user: SessionUser, companyId: string): boolean
 }
 
 /**
+ * Commentary and document upload follow the same rule as financials
+ * (PRD Sec 4 permissions matrix): firm-side roles anywhere, CFO on their
+ * own company only.
+ */
+export const canEditCommentary = canEditFinancials;
+export const canUploadDocuments = canEditFinancials;
+
+/**
+ * Managing the KPI template library. PRD Sec 4 grants this to Partner and
+ * Deal Team as well as Admin — everyone except the portfolio-company CFO.
+ */
+export function canManageKpiTemplates(user: SessionUser): boolean {
+  return user.role !== "CFO";
+}
+
+/**
  * Fund roll-ups and other firm-level views. CFOs are company-scoped and
  * must never see cross-company or fund-level data (CLAUDE.md "Users").
  * If Deal Team gets scoped by coverage (the open decision), this stays a

@@ -37,15 +37,14 @@ outside this file — extend the schema first, then run `npm run db:push`.
 4. **This is a monitoring dashboard, not a valuation/fund-accounting system.**
    Don't add waterfall or valuation modeling — that's explicitly out of scope.
 
-## Open decision — resolve before real data goes in
-`lib/rbac.ts` currently treats Partner/Deal Team/Admin as firm-wide access
-(can see all funds/companies) and CFO as scoped to their own company only.
-This was left open in the original PRD because SEC-audit posture usually
-expects access scoped to a documented "need," not blanket firm-wide access.
-If that gets resolved to "scope Deal Team by coverage," the fix is: add a
-coverage check in `canAccessCompany`/`canEditFinancials` using the existing
-`FundAccess`/`CompanyAccess` tables (already modeled, just not enforced for
-those two roles yet).
+## RBAC scoping (PRD §9 Q1 — resolved 2026-09-01, revisit before real data)
+`lib/rbac.ts` treats Partner/Deal Team/Admin as firm-wide and CFO as scoped
+to their own company. Decided firm-wide per Tapan's instruction (see
+Decisions Log). SEC-audit posture may still push toward "scope Deal Team by
+coverage" later — if so, add a coverage check in
+`canAccessCompany`/`canEditFinancials` using the `FundAccess`/`CompanyAccess`
+rows (now assignable to any role in the admin UI, just not enforced for
+firm-side roles yet).
 
 ## Commands
 - `npm run dev` — local dev server
@@ -67,6 +66,21 @@ those two roles yet).
 entry here. Example: "2026-08-27 — RBAC scoping: Partner/Deal Team stay
 firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 
+- 2026-09-01 — PRD §9 Q1 (access scoping): Partner/Deal Team/Admin stay
+  FIRM-WIDE, CFO restricted to own company — per Tapan's original "everyone
+  on the firm side can edit" instruction. `FundAccess`/`CompanyAccess` rows
+  are now assignable to any role via the admin UI so a future switch to
+  "scope Deal Team by coverage" is a change in `lib/rbac.ts` only.
+- 2026-09-01 — PRD §9 Q2 (CFO submission review/approval): NOT in V1. CFO
+  numbers are live on submit, tagged `KpiSource.CFO_SUBMISSION` so a review
+  step can be layered on later. §5.1 scope doesn't include an approval
+  workflow.
+- 2026-09-01 — PRD §6.3 "rich text" commentary: stored as plain multi-line
+  text for the mock phase, rendered with preserved line breaks. Upgrade to
+  a real rich-text field is a fast-follow, not V1.
+- 2026-09-01 — PRD §6.2 "weighted EBITDA margin" in the fund roll-up:
+  deferred. Roll-up shows additive Revenue / EBITDA / Net Debt / Headcount;
+  a weighted margin line can be added later.
 - 2026-08-31 — Variance flag thresholds (unfavorable side, % of |budget|):
   within 5% → GREEN, 5–15% → YELLOW, >15% → RED. Company flag = worst
   FINANCIAL-KPI flag for the period; stored `PortfolioCompany.status` is the
@@ -79,6 +93,34 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-09-01 — PRD conformance pass (post build-order). Closed the V1
+  feature gaps found reviewing against `Portfolio_KPI_Dashboard_PRD.docx`:
+  • Commentary write path — `lib/commentary.ts` + `/companies/[id]` inline
+    editor; one note per author/period (`@@unique`), CFO limited to own
+    company, `logAudit` in-tx (§6.3 / §8.1).
+  • Document upload — `lib/documents.ts` + `lib/storage.ts` (Vercel Blob
+    when `BLOB_READ_WRITE_TOKEN` set, else gitignored `.uploads/`),
+    `/api/documents/[id]` RBAC download, category + 20 MB + type checks,
+    audited. No delete path (§6.3).
+  • Audit-log viewer — `/audit` (`lib/audit-log.ts`), Partner/Deal Team/
+    Admin via `canViewAuditLog`, entityType filter + cursor paging (§4).
+  • Flagged-first triage — `getPortfolioTriage` + "Needs attention" list on
+    `/` (dashboard home), worst-first with variance drivers (§6.5).
+  • KPI templates opened to Partner/Deal Team (`canManageKpiTemplates`);
+    library moved `/admin/kpis` → `/kpis`. Added `KpiDefinition.retired`
+    (retire/restore, hidden from entry+reporting, history kept) and honored
+    `appliesTo` industry filter via `lib/kpi-defs.ts` (§4 / §6.1 / §6.4).
+  • Standard KPI set: added **Net Debt** (lower-is-better flag), renamed
+    Gross Margin → **EBITDA Margin** (§6.1). Net Debt added to the fund
+    roll-up totals + CSV.
+  • MoM / QoQ / YoY on the company KPI history (§6.1); seed widened to 15
+    months so YoY has a full prior year.
+  • Seed now *derives* `PortfolioCompany.status` from the latest period's
+    variance instead of hand-setting it (§6.5).
+  `db:push` run for `User.active` was already applied; this pass added
+  `Commentary @@unique` + `KpiDefinition.retired`. tsc + build clean;
+  37-check PRD harness green. Still open: deployment (§8.2), true rich-text
+  commentary, weighted EBITDA margin (see Decisions Log).
 - 2026-08-31 — Build order step 7: PDF/CSV export. CSV via route handlers
   `/api/export/funds`, `/api/export/funds/[id]`, `/api/export/companies/[id]`
   (session-gated; firm-wide check for the fund routes, `getCompanyDetail`'s

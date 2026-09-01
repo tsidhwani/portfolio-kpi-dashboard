@@ -20,11 +20,10 @@ export type VarianceFlag = CompanyStatus; // "GREEN" | "YELLOW" | "RED"
 export const VARIANCE_THRESHOLDS = { yellow: 5, red: 15 } as const;
 
 /**
- * KPIs where a number *below* budget is the bad outcome. Every KPI in the
- * Phase-1 template is higher-is-better, so this is empty — it's here so a
- * future "lower is better" metric (churn, DSO, cash burn) is a one-line add.
+ * KPIs where a number *below* budget is the favourable outcome — a shortfall
+ * on these is good, an overshoot trips the flag. Matched by KPI name.
  */
-const LOWER_IS_BETTER = new Set<string>([]);
+const LOWER_IS_BETTER = new Set<string>(["Net Debt"]);
 
 export function kpiHigherIsBetter(kpiName: string): boolean {
   return !LOWER_IS_BETTER.has(kpiName);

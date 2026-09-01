@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { saveKpiDefinition } from "../actions";
+import { saveKpiDefinition } from "./actions";
 
 type Category = "FINANCIAL" | "OPERATIONAL";
 const CATEGORIES: Category[] = ["FINANCIAL", "OPERATIONAL"];
@@ -15,6 +15,7 @@ type KpiRow = {
   cadence: string;
   appliesTo: string | null;
   isCustom: boolean;
+  retired: boolean;
   valueCount: number;
 };
 
@@ -26,6 +27,7 @@ type Draft = {
   cadence: string;
   appliesTo: string;
   isCustom: boolean;
+  retired: boolean;
 };
 
 const blank = (): Draft => ({
@@ -36,6 +38,7 @@ const blank = (): Draft => ({
   cadence: "monthly",
   appliesTo: "",
   isCustom: true,
+  retired: false,
 });
 
 const toDraft = (k: KpiRow): Draft => ({
@@ -46,6 +49,7 @@ const toDraft = (k: KpiRow): Draft => ({
   cadence: k.cadence,
   appliesTo: k.appliesTo ?? "",
   isCustom: k.isCustom,
+  retired: k.retired,
 });
 
 export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
@@ -59,11 +63,10 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
     setDraft(next);
   }
 
-  function submit() {
-    if (!draft) return;
+  function save(d: Draft) {
     setError(null);
     startTransition(async () => {
-      const res = await saveKpiDefinition(draft);
+      const res = await saveKpiDefinition(d);
       if (res.status === "error") {
         setError(res.message);
         return;
@@ -99,24 +102,34 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
           </thead>
           <tbody>
             {kpis.map((k) => (
-              <tr key={k.id} className="border-b">
+              <tr key={k.id} className={`border-b ${k.retired ? "text-gray-400" : ""}`}>
                 <td className="py-2 pr-4">
                   {k.name}
                   {k.isCustom && (
                     <span className="ml-1 text-xs text-gray-400">custom</span>
                   )}
+                  {k.retired && (
+                    <span className="ml-1 text-xs text-gray-400">· retired</span>
+                  )}
                 </td>
                 <td className="py-2 pr-4">{k.category}</td>
                 <td className="py-2 pr-4">{k.unit}</td>
                 <td className="py-2 pr-4">{k.cadence}</td>
-                <td className="py-2 pr-4 text-gray-600">{k.appliesTo ?? "all"}</td>
-                <td className="py-2 pr-4 text-gray-500">{k.valueCount}</td>
-                <td className="py-2 text-right">
+                <td className="py-2 pr-4">{k.appliesTo ?? "all"}</td>
+                <td className="py-2 pr-4">{k.valueCount}</td>
+                <td className="py-2 text-right whitespace-nowrap">
                   <button
                     onClick={() => open(toDraft(k))}
                     className="text-blue-600 hover:underline"
                   >
                     Edit
+                  </button>
+                  <button
+                    onClick={() => save({ ...toDraft(k), retired: !k.retired })}
+                    disabled={pending}
+                    className="ml-3 text-blue-600 hover:underline disabled:opacity-50"
+                  >
+                    {k.retired ? "Restore" : "Retire"}
                   </button>
                 </td>
               </tr>
@@ -186,22 +199,34 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
             </label>
           </div>
 
-          {!draft.id && (
-            <label className="mt-3 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={draft.isCustom}
-                onChange={(e) => setDraft({ ...draft, isCustom: e.target.checked })}
-              />
-              <span>Mark as custom (firm-added, not part of the base template)</span>
-            </label>
-          )}
+          <div className="mt-3 flex flex-col gap-2">
+            {!draft.id && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={draft.isCustom}
+                  onChange={(e) => setDraft({ ...draft, isCustom: e.target.checked })}
+                />
+                <span>Mark as custom (firm-added, not part of the base template)</span>
+              </label>
+            )}
+            {draft.id && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={draft.retired}
+                  onChange={(e) => setDraft({ ...draft, retired: e.target.checked })}
+                />
+                <span>Retired (hidden from entry &amp; reporting, history kept)</span>
+              </label>
+            )}
+          </div>
 
           {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
           <div className="mt-4 flex gap-2">
             <button
-              onClick={submit}
+              onClick={() => draft && save(draft)}
               disabled={pending}
               className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
             >

@@ -52,6 +52,7 @@ export default async function FundsPage() {
               <th className="py-2 pr-4 font-medium">G / Y / R</th>
               <th className="py-2 pr-4 text-right font-medium">Revenue</th>
               <th className="py-2 pr-4 text-right font-medium">EBITDA</th>
+              <th className="py-2 pr-4 text-right font-medium">Net Debt</th>
               <th className="py-2 text-right font-medium">Headcount</th>
             </tr>
           </thead>
@@ -74,6 +75,7 @@ export default async function FundsPage() {
                 </td>
                 <td className="py-2 pr-4 text-right">{formatByUnit(f.revenue, "USD")}</td>
                 <td className="py-2 pr-4 text-right">{formatByUnit(f.ebitda, "USD")}</td>
+                <td className="py-2 pr-4 text-right">{formatByUnit(f.netDebt, "USD")}</td>
                 <td className="py-2 text-right">{formatByUnit(f.headcount, "FTEs")}</td>
               </tr>
             ))}

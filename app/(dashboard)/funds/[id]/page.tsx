@@ -8,7 +8,7 @@ import { StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
 
 export const dynamic = "force-dynamic";
 
-const COLUMNS = ["Revenue", "EBITDA", "Gross Margin", "Headcount"];
+const COLUMNS = ["Revenue", "EBITDA", "EBITDA Margin", "Net Debt", "Headcount"];
 
 export default async function FundDetailPage({
   params,

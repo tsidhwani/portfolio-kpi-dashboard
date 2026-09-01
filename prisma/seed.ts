@@ -20,6 +20,8 @@ import {
   KpiSource,
   AuditAction,
 } from "@prisma/client";
+import { variancePct } from "../lib/format";
+import { flagForVariance, rollUpFlags } from "../lib/variance";
 
 const prisma = new PrismaClient();
 
@@ -37,11 +39,13 @@ function mulberry32(seed: number) {
 const rand = mulberry32(20260827);
 const jitter = (amp: number) => (rand() - 0.5) * 2 * amp;
 
-// --- reporting periods: 12 complete months ending 2026-07 -----------------
+// --- reporting periods: 15 complete months ending 2026-07 ----------------
+// 15 (not 12) so the latest few months have a full year of prior history
+// for YoY trend (PRD 6.1).
 const ANCHOR_YEAR = 2026;
 const ANCHOR_MONTH = 7; // 0-indexed → August; last complete month is July
 const periods: Date[] = [];
-for (let i = 12; i >= 1; i--) {
+for (let i = 15; i >= 1; i--) {
   periods.push(new Date(Date.UTC(ANCHOR_YEAR, ANCHOR_MONTH - i, 1)));
 }
 const latest = periods[periods.length - 1];
@@ -64,7 +68,15 @@ const FUNDS = [
   { id: "fund_of1", name: "Meridian Opportunities Fund I", vintageYear: 2022, fundSize: 300_000_000, status: "Investing" },
 ];
 
-type Base = { revenue: number; ebitda: number; gm: number; cash: number; headcount: number; customers: number };
+type Base = {
+  revenue: number;
+  ebitda: number;
+  ebitdaMargin: number; // %
+  netDebt: number; // USD; negative = net cash
+  cash: number;
+  headcount: number;
+  customers: number;
+};
 const COMPANIES: {
   id: string;
   name: string;
@@ -81,49 +93,49 @@ const COMPANIES: {
     id: "co_northwind", name: "Northwind Logistics", fundId: "fund_gf2", industry: "Logistics",
     investmentDate: "2018-03-01", ownershipPct: 62, status: CompanyStatus.YELLOW,
     dealOwner: "usr_deal1", cfo: "usr_cfo_northwind",
-    base: { revenue: 8_200_000, ebitda: 900_000, gm: 24, cash: 4_500_000, headcount: 540, customers: 320 },
+    base: { revenue: 8_200_000, ebitda: 900_000, ebitdaMargin: 11, netDebt: 35_000_000, cash: 4_500_000, headcount: 540, customers: 320 },
   },
   {
     id: "co_brightpath", name: "BrightPath Education", fundId: "fund_gf2", industry: "Education Tech",
     investmentDate: "2019-06-15", ownershipPct: 55, status: CompanyStatus.GREEN,
     dealOwner: "usr_deal1",
-    base: { revenue: 3_100_000, ebitda: 620_000, gm: 68, cash: 9_000_000, headcount: 210, customers: 1_400 },
+    base: { revenue: 3_100_000, ebitda: 620_000, ebitdaMargin: 20, netDebt: 8_000_000, cash: 9_000_000, headcount: 210, customers: 1_400 },
   },
   {
     id: "co_summit", name: "Summit Fabrication", fundId: "fund_gf2", industry: "Industrial Manufacturing",
     investmentDate: "2017-11-01", ownershipPct: 70, status: CompanyStatus.RED,
     dealOwner: "usr_deal1",
-    base: { revenue: 5_600_000, ebitda: 210_000, gm: 18, cash: 1_200_000, headcount: 380, customers: 45 },
+    base: { revenue: 5_600_000, ebitda: 210_000, ebitdaMargin: 4, netDebt: 22_000_000, cash: 1_200_000, headcount: 380, customers: 45 },
   },
   {
     id: "co_helix", name: "Helix Bio", fundId: "fund_gf3", industry: "Life Sciences",
     investmentDate: "2021-09-01", ownershipPct: 48, status: CompanyStatus.GREEN,
     dealOwner: "usr_deal2", cfo: "usr_cfo_helix",
-    base: { revenue: 2_400_000, ebitda: -300_000, gm: 71, cash: 22_000_000, headcount: 130, customers: 12 },
+    base: { revenue: 2_400_000, ebitda: -300_000, ebitdaMargin: -13, netDebt: -18_000_000, cash: 22_000_000, headcount: 130, customers: 12 },
   },
   {
     id: "co_cobalt", name: "Cobalt Payments", fundId: "fund_gf3", industry: "Fintech",
     investmentDate: "2022-02-01", ownershipPct: 40, status: CompanyStatus.GREEN,
     dealOwner: "usr_deal2",
-    base: { revenue: 4_800_000, ebitda: 1_100_000, gm: 62, cash: 15_000_000, headcount: 240, customers: 8_600 },
+    base: { revenue: 4_800_000, ebitda: 1_100_000, ebitdaMargin: 23, netDebt: 5_000_000, cash: 15_000_000, headcount: 240, customers: 8_600 },
   },
   {
     id: "co_verdant", name: "Verdant AgriData", fundId: "fund_gf3", industry: "AgTech",
     investmentDate: "2022-08-01", ownershipPct: 51, status: CompanyStatus.YELLOW,
     dealOwner: "usr_deal2",
-    base: { revenue: 1_900_000, ebitda: -150_000, gm: 55, cash: 6_500_000, headcount: 95, customers: 480 },
+    base: { revenue: 1_900_000, ebitda: -150_000, ebitdaMargin: -8, netDebt: -4_000_000, cash: 6_500_000, headcount: 95, customers: 480 },
   },
   {
     id: "co_lumen", name: "Lumen Health", fundId: "fund_of1", industry: "Healthcare Services",
     investmentDate: "2023-01-15", ownershipPct: 45, status: CompanyStatus.GREEN,
     dealOwner: "usr_deal2",
-    base: { revenue: 6_300_000, ebitda: 780_000, gm: 33, cash: 8_800_000, headcount: 410, customers: 260 },
+    base: { revenue: 6_300_000, ebitda: 780_000, ebitdaMargin: 12, netDebt: 24_000_000, cash: 8_800_000, headcount: 410, customers: 260 },
   },
   {
     id: "co_atlas", name: "Atlas Freight", fundId: "fund_of1", industry: "Logistics",
     investmentDate: "2023-05-01", ownershipPct: 58, status: CompanyStatus.YELLOW,
     dealOwner: "usr_deal1",
-    base: { revenue: 7_100_000, ebitda: 640_000, gm: 21, cash: 3_900_000, headcount: 470, customers: 210 },
+    base: { revenue: 7_100_000, ebitda: 640_000, ebitdaMargin: 9, netDebt: 20_000_000, cash: 3_900_000, headcount: 470, customers: 210 },
   },
 ];
 
@@ -138,21 +150,27 @@ const KPIS: {
   noise: number;
   integer?: boolean;
   isCustom?: boolean;
+  appliesTo?: string; // industry filter; undefined = all
+  lowerIsBetter?: boolean; // e.g. Net Debt — under budget is favourable
   baseKey: keyof Base;
 }[] = [
   { id: "kpi_revenue", name: "Revenue", category: KpiCategory.FINANCIAL, unit: "USD", kind: "growth", growth: 0.015, noise: 0.03, baseKey: "revenue" },
   { id: "kpi_ebitda", name: "EBITDA", category: KpiCategory.FINANCIAL, unit: "USD", kind: "growth", growth: 0.018, noise: 0.06, baseKey: "ebitda" },
-  { id: "kpi_gross_margin", name: "Gross Margin", category: KpiCategory.FINANCIAL, unit: "%", kind: "level", noise: 1.5, baseKey: "gm" },
+  { id: "kpi_ebitda_margin", name: "EBITDA Margin", category: KpiCategory.FINANCIAL, unit: "%", kind: "level", noise: 1.2, baseKey: "ebitdaMargin" },
+  { id: "kpi_net_debt", name: "Net Debt", category: KpiCategory.FINANCIAL, unit: "USD", kind: "growth", growth: -0.004, noise: 0.03, lowerIsBetter: true, baseKey: "netDebt" },
   { id: "kpi_cash_balance", name: "Cash Balance", category: KpiCategory.FINANCIAL, unit: "USD", kind: "growth", growth: 0.005, noise: 0.04, baseKey: "cash" },
   { id: "kpi_headcount", name: "Headcount", category: KpiCategory.OPERATIONAL, unit: "FTEs", kind: "growth", growth: 0.01, noise: 0.012, integer: true, baseKey: "headcount" },
   { id: "kpi_customer_count", name: "Customer Count", category: KpiCategory.OPERATIONAL, unit: "count", kind: "growth", growth: 0.02, noise: 0.02, integer: true, baseKey: "customers" },
 ];
 
-// mean performance of actual vs. budget, keyed by traffic-light status
+// Mean performance of actual vs. budget, keyed by the *designed* narrative
+// status. This drives how far a company runs from plan; the traffic-light
+// flag itself is then computed from the resulting variance (PRD 6.5) and
+// written back to PortfolioCompany.status below — nothing hand-sets it.
 const PERF: Record<CompanyStatus, { growth: number; levelPts: number }> = {
-  [CompanyStatus.GREEN]: { growth: 0.02, levelPts: 0.5 },
-  [CompanyStatus.YELLOW]: { growth: -0.05, levelPts: -1.5 },
-  [CompanyStatus.RED]: { growth: -0.14, levelPts: -4 },
+  [CompanyStatus.GREEN]: { growth: 0.02, levelPts: 0.4 },
+  [CompanyStatus.YELLOW]: { growth: -0.05, levelPts: -1.0 },
+  [CompanyStatus.RED]: { growth: -0.14, levelPts: -2.6 },
 };
 
 const round = (n: number, dp = 0) => {
@@ -208,12 +226,12 @@ async function main() {
       category: k.category,
       unit: k.unit,
       cadence: "monthly",
-      appliesTo: null,
+      appliesTo: k.appliesTo ?? null,
       isCustom: !!k.isCustom,
     })),
   });
 
-  // KPI values: 8 companies × 6 KPIs × 12 months.
+  // KPI values: 8 companies × 7 KPIs × 15 months.
   const kpiRows: {
     companyId: string;
     kpiDefId: string;
@@ -232,16 +250,20 @@ async function main() {
         let budget: number;
         let actual: number;
 
+        // For "lower is better" KPIs (Net Debt) a GREEN company should come
+        // in *under* budget, so flip the performance delta's sign.
+        const perfSign = kpi.lowerIsBetter ? -1 : 1;
+
         if (kpi.kind === "growth") {
           const g = kpi.growth ?? 0;
           // negative base = burn; trend it toward zero instead of compounding down
           const factor = base < 0 ? (1 - g) ** t : (1 + g) ** t;
           budget = base * factor;
-          const perfDelta = perf.growth + jitter(kpi.noise);
+          const perfDelta = (perf.growth + jitter(kpi.noise)) * perfSign;
           actual = budget * (1 + (base < 0 ? -perfDelta : perfDelta));
         } else {
           budget = base;
-          actual = base + perf.levelPts + jitter(kpi.noise);
+          actual = base + (perf.levelPts + jitter(kpi.noise)) * perfSign;
         }
 
         const dp = kpi.integer ? 0 : kpi.unit === "%" ? 1 : 0;
@@ -257,6 +279,27 @@ async function main() {
     }
   }
   await prisma.kpiValue.createMany({ data: kpiRows });
+
+  // Derive the traffic-light flag from the latest period's financial-KPI
+  // variance and store it (PRD 6.5 — the flag is automatic, not hand-set).
+  const finById = new Map(KPIS.map((k) => [k.id, k]));
+  for (const co of COMPANIES) {
+    const flags = kpiRows
+      .filter(
+        (r) =>
+          r.companyId === co.id &&
+          r.period.getTime() === latest.getTime() &&
+          finById.get(r.kpiDefId)?.category === KpiCategory.FINANCIAL,
+      )
+      .map((r) =>
+        flagForVariance(
+          variancePct(r.actual, r.budget),
+          !finById.get(r.kpiDefId)?.lowerIsBetter,
+        ),
+      );
+    const status = (rollUpFlags(flags) ?? CompanyStatus.GREEN) as CompanyStatus;
+    await prisma.portfolioCompany.update({ where: { id: co.id }, data: { status } });
+  }
 
   // Commentary — last 3 periods per company, plus a CFO note on the latest.
   const commentaryByStatus: Record<CompanyStatus, string> = {

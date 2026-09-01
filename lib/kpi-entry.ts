@@ -63,10 +63,17 @@ export async function applyKpiEntry(user: SessionUser, raw: unknown): Promise<Sa
   const periodDate = periodKeyToDate(period);
 
   const validKpiIds = new Set(
-    (await prisma.kpiDefinition.findMany({ select: { id: true } })).map((k) => k.id),
+    (
+      await prisma.kpiDefinition.findMany({
+        where: { retired: false },
+        select: { id: true },
+      })
+    ).map((k) => k.id),
   );
   const unknown = rows.find((r) => !validKpiIds.has(r.kpiDefId));
-  if (unknown) return { status: "error", message: `Unknown metric: ${unknown.kpiDefId}` };
+  if (unknown) {
+    return { status: "error", message: `Unknown or retired metric: ${unknown.kpiDefId}` };
+  }
 
   const source = user.role === "CFO" ? KpiSource.CFO_SUBMISSION : KpiSource.MANUAL_ENTRY;
 

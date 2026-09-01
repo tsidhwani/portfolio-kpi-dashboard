@@ -112,6 +112,7 @@ model KpiDefinition {
   cadence    String   // e.g. "monthly"
   appliesTo  String?  // industry filter, null = all
   isCustom   Boolean  @default(false)
+  retired    Boolean  @default(false) // hidden from entry/reporting; history kept
   values     KpiValue[]
 }
 
@@ -140,6 +141,9 @@ model Commentary {
   body      String
   createdAt DateTime @default(now())
   editedAt  DateTime @updatedAt
+
+  // One editable note per author per company per period (PRD 6.3).
+  @@unique([companyId, period, authorId])
 }
 
 model Document {

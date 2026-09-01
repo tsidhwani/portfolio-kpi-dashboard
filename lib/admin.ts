@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { AuditAction, KpiCategory, Role } from "@prisma/client";
 import { prisma } from "./prisma";
-import { canManageUsers, type SessionUser } from "./rbac";
+import { canManageUsers, canManageKpiTemplates, type SessionUser } from "./rbac";
 import { logAudit } from "./audit";
 
 /**
@@ -94,13 +94,14 @@ export type AdminKpiRow = {
   cadence: string;
   appliesTo: string | null;
   isCustom: boolean;
+  retired: boolean;
   valueCount: number;
 };
 
 export async function listKpiDefinitions(user: SessionUser): Promise<AdminKpiRow[]> {
-  if (!canManageUsers(user)) return [];
+  if (!canManageKpiTemplates(user)) return [];
   const rows = await prisma.kpiDefinition.findMany({
-    orderBy: [{ category: "asc" }, { name: "asc" }],
+    orderBy: [{ retired: "asc" }, { category: "asc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
@@ -109,6 +110,7 @@ export async function listKpiDefinitions(user: SessionUser): Promise<AdminKpiRow
       cadence: true,
       appliesTo: true,
       isCustom: true,
+      retired: true,
       _count: { select: { values: true } },
     },
   });
@@ -120,6 +122,7 @@ export async function listKpiDefinitions(user: SessionUser): Promise<AdminKpiRow
     cadence: r.cadence,
     appliesTo: r.appliesTo,
     isCustom: r.isCustom,
+    retired: r.retired,
     valueCount: r._count.values,
   }));
 }
@@ -277,6 +280,7 @@ const KpiInput = z.object({
   cadence: z.string().trim().min(1).default("monthly"),
   appliesTo: z.string().trim().nullish(),
   isCustom: z.boolean().default(true),
+  retired: z.boolean().default(false),
 });
 export type KpiInput = z.input<typeof KpiInput>;
 
@@ -284,7 +288,7 @@ export async function upsertKpiDefinition(
   actor: SessionUser,
   raw: unknown,
 ): Promise<AdminResult<{ id: string }>> {
-  if (!canManageUsers(actor)) {
+  if (!canManageKpiTemplates(actor)) {
     return err("You don't have permission to manage the KPI library.");
   }
 
@@ -315,6 +319,7 @@ export async function upsertKpiDefinition(
         cadence: existing.cadence,
         appliesTo: existing.appliesTo,
         isCustom: existing.isCustom,
+        retired: existing.retired,
       }
     : undefined;
 
@@ -328,6 +333,7 @@ export async function upsertKpiDefinition(
             unit: input.unit,
             cadence: input.cadence,
             appliesTo,
+            retired: input.retired,
           },
         })
       : await tx.kpiDefinition.create({
@@ -338,6 +344,7 @@ export async function upsertKpiDefinition(
             cadence: input.cadence,
             appliesTo,
             isCustom: input.isCustom,
+            retired: input.retired,
           },
         });
 
@@ -355,6 +362,7 @@ export async function upsertKpiDefinition(
           cadence: def.cadence,
           appliesTo: def.appliesTo,
           isCustom: def.isCustom,
+          retired: def.retired,
         },
       },
       tx,

@@ -3,6 +3,7 @@ import { prisma } from "./prisma";
 import { canAccessCompany, canViewFirmWide, type SessionUser } from "./rbac";
 import { dateToPeriodKey, periodKeyToDate, recentPeriodKeys } from "./periods";
 import { variancePct } from "./format";
+import { getKpiDefsFor } from "./kpi-defs";
 import {
   flagForVariance,
   kpiHigherIsBetter,
@@ -82,6 +83,7 @@ export type FundRollup = {
   // additive USD/headcount totals across the fund's companies for the period
   revenue: number | null;
   ebitda: number | null;
+  netDebt: number | null;
   headcount: number | null;
 };
 
@@ -103,7 +105,7 @@ export async function getFundRollups(
         select: {
           status: true,
           kpiValues: {
-            where: { period },
+            where: { period, kpiDefinition: { retired: false } },
             select: {
               actual: true,
               budget: true,
@@ -120,6 +122,7 @@ export async function getFundRollups(
     const acc: Record<string, { sum: number; seen: boolean }> = {
       Revenue: { sum: 0, seen: false },
       EBITDA: { sum: 0, seen: false },
+      "Net Debt": { sum: 0, seen: false },
       Headcount: { sum: 0, seen: false },
     };
 
@@ -141,6 +144,7 @@ export async function getFundRollups(
       statusCounts,
       revenue: acc.Revenue.seen ? acc.Revenue.sum : null,
       ebitda: acc.EBITDA.seen ? acc.EBITDA.sum : null,
+      netDebt: acc["Net Debt"].seen ? acc["Net Debt"].sum : null,
       headcount: acc.Headcount.seen ? acc.Headcount.sum : null,
     };
   });
@@ -198,7 +202,7 @@ export async function getFundDetail(
       status: true,
       ownershipPct: true,
       kpiValues: {
-        where: { period },
+        where: { period, kpiDefinition: { retired: false } },
         select: {
           actual: true,
           budget: true,
@@ -262,7 +266,18 @@ export type CompanyDetail = {
       { actual: number | null; budget: number | null; flag: VarianceFlag | null }
     >
   >;
-  commentary: { id: string; periodKey: string; body: string; author: string }[];
+  // Actual-vs-prior-period % change of the latest month (PRD 6.1).
+  trend: Record<
+    string,
+    { mom: number | null; qoq: number | null; yoy: number | null }
+  >;
+  commentary: {
+    id: string;
+    periodKey: string;
+    body: string;
+    author: string;
+    authorId: string;
+  }[];
   documents: {
     id: string;
     filename: string;
@@ -298,13 +313,14 @@ export async function getCompanyDetail(
     (await reportingPeriodKey()) ??
     dateToPeriodKey(new Date());
   const periodKeys = recentPeriodKeys(months, periodKeyToDate(anchorKey));
-  const oldest = periodKeyToDate(periodKeys[periodKeys.length - 1]);
+  // Always pull >= 13 months so MoM/QoQ/YoY deltas can be computed.
+  const trendKeys = recentPeriodKeys(13, periodKeyToDate(anchorKey));
+  const oldest = periodKeyToDate(
+    [...periodKeys, ...trendKeys].sort()[0],
+  );
 
   const [kpiDefs, values, commentary, documents] = await Promise.all([
-    prisma.kpiDefinition.findMany({
-      orderBy: [{ category: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, unit: true, category: true },
-    }),
+    getKpiDefsFor(company),
     prisma.kpiValue.findMany({
       where: { companyId, period: { gte: oldest } },
       select: { kpiDefId: true, period: true, actual: true, budget: true },
@@ -312,11 +328,12 @@ export async function getCompanyDetail(
     prisma.commentary.findMany({
       where: { companyId },
       orderBy: { period: "desc" },
-      take: 12,
+      take: 24,
       select: {
         id: true,
         period: true,
         body: true,
+        authorId: true,
         author: { select: { name: true } },
       },
     }),
@@ -362,6 +379,22 @@ export async function getCompanyDetail(
         .map((d) => grid[d.id]?.[latestKey]?.flag ?? null),
     ) ?? company.status;
 
+  // MoM / QoQ / YoY: latest actual vs. the actual 1 / 3 / 12 months back.
+  const pctChange = (cur: number | null, prev: number | null) =>
+    cur == null || prev == null || prev === 0
+      ? null
+      : ((cur - prev) / Math.abs(prev)) * 100;
+  const trend: CompanyDetail["trend"] = {};
+  for (const d of kpiDefs) {
+    const at = (k: string) => grid[d.id]?.[k]?.actual ?? null;
+    const cur = at(trendKeys[0]);
+    trend[d.id] = {
+      mom: pctChange(cur, at(trendKeys[1])),
+      qoq: pctChange(cur, at(trendKeys[3])),
+      yoy: pctChange(cur, at(trendKeys[12])),
+    };
+  }
+
   return {
     id: company.id,
     name: company.name,
@@ -374,11 +407,13 @@ export async function getCompanyDetail(
     kpiDefs,
     periodKeys,
     grid,
+    trend,
     commentary: commentary.map((c) => ({
       id: c.id,
       periodKey: dateToPeriodKey(c.period),
       body: c.body,
       author: c.author.name,
+      authorId: c.authorId,
     })),
     documents: documents.map((d) => ({
       id: d.id,
@@ -388,4 +423,79 @@ export async function getCompanyDetail(
       uploader: d.uploader.name,
     })),
   };
+}
+
+export type TriageRow = {
+  id: string;
+  name: string;
+  fundId: string;
+  fundName: string;
+  industry: string;
+  status: CompanyStatus;
+  // most unfavourable financial KPIs this period, worst first
+  drivers: { kpi: string; variancePct: number; flag: VarianceFlag }[];
+};
+
+/**
+ * Every company the user can see, worst-flagged first (PRD 6.5 — "surfaces
+ * flagged companies first so partners can triage quickly"). CFOs get their
+ * own company only, which makes this a no-op for them.
+ */
+export async function getPortfolioTriage(
+  user: SessionUser,
+  periodKey: string,
+): Promise<TriageRow[]> {
+  const companies = await prisma.portfolioCompany.findMany({
+    orderBy: [{ fund: { name: "asc" } }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      industry: true,
+      status: true,
+      fundId: true,
+      fund: { select: { name: true } },
+      kpiValues: {
+        where: { period: periodKeyToDate(periodKey), kpiDefinition: { retired: false } },
+        select: {
+          actual: true,
+          budget: true,
+          kpiDefinition: { select: { name: true, category: true } },
+        },
+      },
+    },
+  });
+
+  const rank: Record<CompanyStatus, number> = { RED: 0, YELLOW: 1, GREEN: 2 };
+
+  return companies
+    .filter((c) => canAccessCompany(user, c.id))
+    .map((c) => {
+      const fin = c.kpiValues.filter((v) => v.kpiDefinition.category === "FINANCIAL");
+      const scored = fin.map((v) => {
+        const higher = kpiHigherIsBetter(v.kpiDefinition.name);
+        const vp = variancePct(num(v.actual), num(v.budget));
+        const unfavorable = vp == null ? null : higher ? -vp : vp;
+        return { kpi: v.kpiDefinition.name, vp, unfavorable, flag: flagForVariance(vp, higher) };
+      });
+      const status = rollUpFlags(scored.map((s) => s.flag)) ?? c.status;
+      const drivers = scored
+        .filter((s) => s.unfavorable != null && s.unfavorable > 0 && s.flag && s.flag !== "GREEN")
+        .sort((a, b) => (b.unfavorable as number) - (a.unfavorable as number))
+        .slice(0, 3)
+        .map((s) => ({
+          kpi: s.kpi,
+          variancePct: s.vp as number,
+          flag: s.flag as VarianceFlag,
+        }));
+      return {
+        id: c.id,
+        name: c.name,
+        fundId: c.fundId,
+        fundName: c.fund.name,
+        industry: c.industry,
+        status,
+        drivers,
+      };
+    })
+    .sort((a, b) => rank[a.status] - rank[b.status] || a.name.localeCompare(b.name));
 }

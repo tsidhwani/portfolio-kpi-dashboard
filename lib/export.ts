@@ -54,6 +54,7 @@ export function fundRollupRows(rollups: FundRollup[], periodKey: string): Cell[]
       "Red",
       "Revenue",
       "EBITDA",
+      "Net Debt",
       "Headcount",
     ],
     ...rollups.map((f) => [
@@ -65,12 +66,19 @@ export function fundRollupRows(rollups: FundRollup[], periodKey: string): Cell[]
       f.statusCounts.RED,
       f.revenue ?? "",
       f.ebitda ?? "",
+      f.netDebt ?? "",
       f.headcount ?? "",
     ]),
   ];
 }
 
-const FUND_DETAIL_METRICS = ["Revenue", "EBITDA", "Gross Margin", "Headcount"];
+const FUND_DETAIL_METRICS = [
+  "Revenue",
+  "EBITDA",
+  "EBITDA Margin",
+  "Net Debt",
+  "Headcount",
+];
 
 /** `/funds/[id]`: one row per company with actual/budget/variance per metric. */
 export function fundDetailRows(fund: FundDetail): Cell[][] {

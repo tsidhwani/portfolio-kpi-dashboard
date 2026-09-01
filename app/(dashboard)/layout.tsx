@@ -44,6 +44,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
                 <Link href="/entry" className="hover:text-gray-900">
                   Monthly Entry
                 </Link>
+                <Link href="/kpis" className="hover:text-gray-900">
+                  KPI Library
+                </Link>
+                <Link href="/audit" className="hover:text-gray-900">
+                  Audit Log
+                </Link>
                 {user.role === "ADMIN" && (
                   <Link href="/admin" className="hover:text-gray-900">
                     Admin
