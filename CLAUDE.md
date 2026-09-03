@@ -33,7 +33,11 @@ outside this file — extend the schema first, then run `npm run db:push`.
 2. **RBAC is enforced at the API/server-action layer**, never just hidden in
    the UI. Every route touching company data calls the helpers in
    `lib/rbac.ts` first.
-3. **OAuth only.** No credentials table, no password reset flow.
+3. **OAuth only in production.** No password store, no credentials table,
+   no password reset flow. The one carve-out (Tapan, 2026-09-03) is the
+   role-picker demo login in `lib/auth.ts` — a `Credentials` provider that
+   takes no secret, only maps a role to an existing seeded user, and is
+   registered only when `DEMO_LOGIN_ENABLED` (dev, or `DEMO_LOGIN=1`).
 4. **This is a monitoring dashboard, not a valuation/fund-accounting system.**
    Don't add waterfall or valuation modeling — that's explicitly out of scope.
 
@@ -93,6 +97,19 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-09-03 — Demo login. `lib/auth.ts` gains a `Credentials` provider
+  (`id: "demo"`) registered only when `DEMO_LOGIN_ENABLED` — on in dev,
+  `DEMO_LOGIN=1` to force it anywhere, off in prod otherwise. `authorize`
+  resolves a role name to the first active seeded user with that role
+  (no email coupling); the existing `signIn` gate still applies, and the
+  `authProviderId` rewrite is skipped for `provider === "demo"`. Google
+  provider now only registers when `GOOGLE_CLIENT_ID` is set, so a fresh
+  clone with no OAuth creds still runs. `jwt` callback reworked to take
+  `user` and persist `token.email` (needed for the Credentials path).
+  Login page shows Admin/Partner/Deal team/CFO buttons. README rewritten
+  with a 4-command demo quick-start + deploy notes. No change to RBAC or
+  any data path; tsc + build clean, `db:smoke` 40/40, end-to-end demo
+  sign-in verified (Admin + CFO, scoping intact).
 - 2026-09-02 — Front-end design pass. Requested styling direction: the
   restraint of a large alternative-asset-manager brand system (institutional,
   editorial). Tokens in `tailwind.config.ts` + `app/globals.css` — warm

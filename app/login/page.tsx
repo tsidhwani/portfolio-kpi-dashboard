@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth, signIn } from "@/lib/auth";
+import { auth, signIn, DEMO_LOGIN_ENABLED } from "@/lib/auth";
 
 const ERROR_COPY: Record<string, string> = {
   AccessDenied:
@@ -7,6 +7,15 @@ const ERROR_COPY: Record<string, string> = {
   Configuration: "Sign-in is misconfigured. Contact the deal team.",
   default: "Sign-in failed. Please try again.",
 };
+
+const GOOGLE_CONFIGURED = !!process.env.GOOGLE_CLIENT_ID;
+
+const DEMO_ROLES = [
+  { role: "Admin", blurb: "users, KPI library, everything" },
+  { role: "Partner", blurb: "read-only roll-ups + notes" },
+  { role: "Deal team", blurb: "enter KPIs, upload, comment" },
+  { role: "CFO", blurb: "one company, submit only" },
+];
 
 export default async function LoginPage({
   searchParams,
@@ -17,6 +26,7 @@ export default async function LoginPage({
   if (session?.user) redirect("/");
 
   const { error, callbackUrl } = await searchParams;
+  const to = callbackUrl ?? "/";
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
@@ -36,17 +46,51 @@ export default async function LoginPage({
           </p>
         )}
 
-        <form
-          className="mt-7"
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: callbackUrl ?? "/" });
-          }}
-        >
-          <button className="btn btn-primary w-full py-2.5">
-            Continue with Google
-          </button>
-        </form>
+        {GOOGLE_CONFIGURED && (
+          <form
+            className="mt-7"
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: to });
+            }}
+          >
+            <button className="btn btn-primary w-full py-2.5">
+              Continue with Google
+            </button>
+          </form>
+        )}
+
+        {DEMO_LOGIN_ENABLED && (
+          <div className={GOOGLE_CONFIGURED ? "mt-6 border-t border-line pt-5" : "mt-7"}>
+            <div className="eyebrow mb-2">
+              {GOOGLE_CONFIGURED ? "Or explore with demo data" : "Demo — no account needed"}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_ROLES.map(({ role, blurb }) => (
+                <form
+                  key={role}
+                  action={async (formData: FormData) => {
+                    "use server";
+                    await signIn("demo", {
+                      role: String(formData.get("role")),
+                      redirectTo: to,
+                    });
+                  }}
+                >
+                  <input type="hidden" name="role" value={role} />
+                  <button className="btn w-full flex-col items-start !py-2 text-left">
+                    <span className="text-[0.8125rem] font-medium text-ink">
+                      {role}
+                    </span>
+                    <span className="text-[0.625rem] font-normal text-ink-faint">
+                      {blurb}
+                    </span>
+                  </button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="mt-8 border-t border-line pt-4 text-[0.6875rem] text-ink-faint">
           OAuth only — no passwords are stored. Every change to financial data,
