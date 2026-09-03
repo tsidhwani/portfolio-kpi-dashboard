@@ -37,20 +37,20 @@ export default async function FundsReportPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Portfolio roll-up</h1>
+      <div className="mb-5 flex items-start justify-between">
+        <div>
+          <div className="eyebrow mb-1">Meridian Capital</div>
+          <h1 className="font-serif text-2xl text-ink">Portfolio roll-up</h1>
+        </div>
         <div className="flex gap-2">
-          <a
-            href="/api/export/funds"
-            className="no-print rounded border px-3 py-1 text-sm hover:bg-gray-50"
-          >
+          <a href="/api/export/funds" className="btn no-print">
             Download CSV
           </a>
           <PrintButton />
         </div>
       </div>
 
-      <p className="text-sm text-gray-500">
+      <p className="text-[0.8125rem] text-ink-soft">
         {periodKey ? `As of ${periodLabel(periodKey)}` : "No KPI data yet."} ·
         generated {generatedOn()}
       </p>
@@ -58,7 +58,7 @@ export default async function FundsReportPage() {
       {periodKey && (
         <table className="mt-4 w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b-2 text-left">
+            <tr className="border-b border-line-strong text-left">
               <th className="py-2 pr-4 font-semibold">Fund</th>
               <th className="py-2 pr-4 font-semibold">Vintage</th>
               <th className="py-2 pr-4 font-semibold">Cos.</th>
@@ -86,7 +86,7 @@ export default async function FundsReportPage() {
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 font-semibold">
+            <tr className="border-t border-line-strong font-semibold">
               <td className="py-2 pr-4">Total</td>
               <td className="py-2 pr-4" />
               <td className="py-2 pr-4">{totals.companies}</td>
@@ -102,7 +102,7 @@ export default async function FundsReportPage() {
         </table>
       )}
 
-      <p className="mt-6 text-xs text-gray-400">
+      <p className="mt-6 text-xs text-ink-faint">
         Roll-up totals are additive across companies with data for the period.
         Status counts use the variance flag (worst financial KPI vs. budget),
         manual status as fallback.

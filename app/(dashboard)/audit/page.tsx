@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import { canViewAuditLog } from "@/lib/rbac";
 import { listAuditEntries } from "@/lib/audit-log";
+import { PageHeader } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +17,9 @@ const preview = (v: unknown) => {
 };
 
 const ACTION_STYLE: Record<string, string> = {
-  CREATE: "text-green-700",
-  UPDATE: "text-blue-700",
-  DELETE: "text-red-700",
+  CREATE: "text-flag-green",
+  UPDATE: "text-link",
+  DELETE: "text-flag-red",
 };
 
 export default async function AuditPage({
@@ -48,18 +49,21 @@ export default async function AuditPage({
   };
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-xl font-semibold">Audit log</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        Append-only record of every create / edit / delete on financial data,
-        commentary, and documents (PRD 8.1). Read-only — no one, including
-        Admins, can alter entries.
-      </p>
+    <div>
+      <PageHeader
+        eyebrow="Compliance"
+        title="Audit log"
+        meta="Append-only record of every create / edit / delete on financial data, commentary, and documents. Read-only — no one, including Admins, can alter entries."
+      />
 
-      <div className="mt-3 flex flex-wrap gap-2 text-sm">
+      <div className="mb-4 flex flex-wrap gap-2 text-[0.75rem]">
         <Link
           href="/audit"
-          className={`rounded border px-2 py-1 ${!sp.type ? "bg-gray-900 text-white" : "hover:bg-gray-50"}`}
+          className={`rounded-sm border px-2 py-1 no-underline ${
+            !sp.type
+              ? "border-accent bg-accent text-white"
+              : "border-line-strong text-ink-soft hover:bg-paper"
+          }`}
         >
           All
         </Link>
@@ -67,48 +71,52 @@ export default async function AuditPage({
           <Link
             key={t}
             href={`/audit?type=${t}`}
-            className={`rounded border px-2 py-1 ${sp.type === t ? "bg-gray-900 text-white" : "hover:bg-gray-50"}`}
+            className={`rounded-sm border px-2 py-1 no-underline ${
+              sp.type === t
+                ? "border-accent bg-accent text-white"
+                : "border-line-strong text-ink-soft hover:bg-paper"
+            }`}
           >
             {t}
           </Link>
         ))}
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+      <div className="card overflow-x-auto">
+        <table className="dt">
           <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">When</th>
-              <th className="py-2 pr-4 font-medium">Actor</th>
-              <th className="py-2 pr-4 font-medium">Action</th>
-              <th className="py-2 pr-4 font-medium">Entity</th>
-              <th className="py-2 pr-4 font-medium">Before → After</th>
+            <tr>
+              <th className="pl-4">When</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th className="pr-4">Before → After</th>
             </tr>
           </thead>
           <tbody>
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-gray-400">
+                <td colSpan={5} className="py-8 text-center text-ink-faint">
                   No entries.
                 </td>
               </tr>
             ) : (
               entries.map((e) => (
-                <tr key={e.id} className="border-b align-top">
-                  <td className="py-2 pr-4 whitespace-nowrap text-gray-600">
+                <tr key={e.id}>
+                  <td className="whitespace-nowrap pl-4 text-ink-soft">
                     {stamp(e.timestamp)}
                   </td>
-                  <td className="py-2 pr-4 whitespace-nowrap">{e.actor}</td>
-                  <td className={`py-2 pr-4 font-medium ${ACTION_STYLE[e.action] ?? ""}`}>
+                  <td className="whitespace-nowrap">{e.actor}</td>
+                  <td className={`font-medium ${ACTION_STYLE[e.action] ?? ""}`}>
                     {e.action}
                   </td>
-                  <td className="py-2 pr-4 whitespace-nowrap">
+                  <td className="whitespace-nowrap">
                     {e.entityType}
-                    <span className="ml-1 text-xs text-gray-400">{e.entityId}</span>
+                    <span className="ml-1 text-[0.6875rem] text-ink-faint">{e.entityId}</span>
                   </td>
-                  <td className="py-2 pr-4 text-xs text-gray-600">
+                  <td className="pr-4 text-[0.6875rem] text-ink-soft">
                     {e.before != null && (
-                      <div className="text-gray-400">− {preview(e.before)}</div>
+                      <div className="text-ink-faint">− {preview(e.before)}</div>
                     )}
                     {e.after != null && <div>+ {preview(e.after)}</div>}
                   </td>
@@ -121,10 +129,7 @@ export default async function AuditPage({
 
       {nextCursor && (
         <div className="mt-4">
-          <Link
-            href={qs({ cursor: nextCursor })}
-            className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
-          >
+          <Link href={qs({ cursor: nextCursor })} className="btn no-underline">
             Older →
           </Link>
         </div>

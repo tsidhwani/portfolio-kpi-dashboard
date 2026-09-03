@@ -19,26 +19,40 @@ export default async function LoginPage({
   const { error, callbackUrl } = await searchParams;
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen gap-4">
-      <h1 className="text-2xl font-semibold">Portfolio KPI Dashboard</h1>
-      <p className="text-sm text-gray-500">Meridian Capital — internal</p>
-
-      {error && (
-        <p className="max-w-sm text-center text-sm text-red-600">
-          {ERROR_COPY[error] ?? ERROR_COPY.default}
+    <main className="flex min-h-screen items-center justify-center px-6">
+      <div className="w-full max-w-sm">
+        <div className="eyebrow mb-3">Meridian Capital</div>
+        <h1 className="font-serif text-[2rem] leading-tight text-ink">
+          Portfolio KPI Dashboard
+        </h1>
+        <p className="mt-2 text-[0.8125rem] text-ink-soft">
+          Internal monitoring for portfolio financials, operating KPIs, and
+          commentary. Access is provisioned by an administrator.
         </p>
-      )}
 
-      <form
-        action={async () => {
-          "use server";
-          await signIn("google", { redirectTo: callbackUrl ?? "/" });
-        }}
-      >
-        <button className="rounded bg-blue-600 px-4 py-2 text-white">
-          Sign in with Google
-        </button>
-      </form>
+        {error && (
+          <p className="mt-5 border-l-2 border-flag-red pl-3 text-[0.8125rem] text-flag-red">
+            {ERROR_COPY[error] ?? ERROR_COPY.default}
+          </p>
+        )}
+
+        <form
+          className="mt-7"
+          action={async () => {
+            "use server";
+            await signIn("google", { redirectTo: callbackUrl ?? "/" });
+          }}
+        >
+          <button className="btn btn-primary w-full py-2.5">
+            Continue with Google
+          </button>
+        </form>
+
+        <p className="mt-8 border-t border-line pt-4 text-[0.6875rem] text-ink-faint">
+          OAuth only — no passwords are stored. Every change to financial data,
+          commentary, and documents is recorded in an append-only audit log.
+        </p>
+      </div>
     </main>
   );
 }

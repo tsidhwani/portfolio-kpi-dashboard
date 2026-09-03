@@ -47,17 +47,17 @@ export function CommentaryEditor({
   const dirty = body !== (myNotes[periodKey] ?? "");
 
   return (
-    <div className="mt-3 rounded border bg-gray-50 p-3">
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-medium text-gray-700">
+    <div className="card mt-3 p-3.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="eyebrow">
           {existing ? "Edit your note" : "Add a note"}
         </span>
-        <label className="ml-auto flex items-center gap-1 text-gray-500">
+        <label className="ml-auto flex items-center gap-1.5 text-[0.75rem] text-ink-faint">
           Period
           <select
             value={periodKey}
             onChange={(e) => pickPeriod(e.target.value)}
-            className="rounded border px-2 py-1"
+            className="field"
           >
             {periods.map((p) => (
               <option key={p.key} value={p.key}>
@@ -73,14 +73,14 @@ export function CommentaryEditor({
         onChange={(e) => setBody(e.target.value)}
         rows={4}
         placeholder="Free-form commentary for this reporting period…"
-        className="mt-2 w-full rounded border px-2 py-1 text-sm"
+        className="field mt-2 w-full"
       />
 
       <div className="mt-2 flex items-center gap-2">
         <button
           onClick={submit}
           disabled={pending || !dirty}
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          className="btn btn-primary"
         >
           {pending ? "Saving…" : existing ? "Update" : "Save"}
         </button>
@@ -98,13 +98,13 @@ export function CommentaryEditor({
               });
             }}
             disabled={pending}
-            className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+            className="btn"
           >
             Clear
           </button>
         )}
-        {msg && <span className="text-xs text-green-700">{msg}</span>}
-        {error && <span className="text-xs text-red-600">{error}</span>}
+        {msg && <span className="text-[0.75rem] text-flag-green">{msg}</span>}
+        {error && <span className="text-[0.75rem] text-flag-red">{error}</span>}
       </div>
     </div>
   );

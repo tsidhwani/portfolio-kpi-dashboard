@@ -83,26 +83,23 @@ export function UsersPanel({
   }
 
   return (
-    <div className="mt-5">
+    <div className="mt-2">
       <div className="flex justify-end">
-        <button
-          onClick={() => open(blank())}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
-        >
+        <button onClick={() => open(blank())} className="btn">
           + Add user
         </button>
       </div>
 
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+      <div className="card mt-2 overflow-x-auto">
+        <table className="dt">
           <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Name</th>
-              <th className="py-2 pr-4 font-medium">Email</th>
-              <th className="py-2 pr-4 font-medium">Role</th>
-              <th className="py-2 pr-4 font-medium">Access</th>
-              <th className="py-2 pr-4 font-medium">Status</th>
-              <th className="py-2 font-medium" />
+            <tr>
+              <th className="pl-4">Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Access</th>
+              <th>Status</th>
+              <th className="pr-4" />
             </tr>
           </thead>
           <tbody>
@@ -114,26 +111,26 @@ export function UsersPanel({
                     ? "firm-wide"
                     : `${u.fundIds.length} fund / ${u.companyIds.length} company`;
               return (
-                <tr key={u.id} className="border-b align-top">
-                  <td className="py-2 pr-4">
+                <tr key={u.id}>
+                  <td className="pl-4 font-medium text-ink">
                     {u.name}
                     {u.id === currentUserId && (
-                      <span className="ml-1 text-xs text-gray-400">(you)</span>
+                      <span className="ml-1.5 text-[0.6875rem] font-normal text-ink-faint">(you)</span>
                     )}
                   </td>
-                  <td className="py-2 pr-4 text-gray-600">{u.email}</td>
-                  <td className="py-2 pr-4">{u.role}</td>
-                  <td className="py-2 pr-4 text-gray-600">{scope}</td>
-                  <td className="py-2 pr-4">
-                    <span className={u.active ? "text-green-700" : "text-gray-400"}>
+                  <td className="text-ink-soft">{u.email}</td>
+                  <td className="text-ink-soft">{u.role}</td>
+                  <td className="text-ink-soft">{scope}</td>
+                  <td>
+                    <span className="inline-flex items-center gap-1.5 text-[0.8125rem]">
+                      <span
+                        className={`h-[7px] w-[7px] rounded-full ${u.active ? "bg-flag-green" : "bg-ink-faint"}`}
+                      />
                       {u.active ? "active" : "inactive"}
                     </span>
                   </td>
-                  <td className="py-2 text-right">
-                    <button
-                      onClick={() => open(toDraft(u))}
-                      className="text-blue-600 hover:underline"
-                    >
+                  <td className="num pr-4">
+                    <button onClick={() => open(toDraft(u))} className="text-link hover:underline">
                       Edit
                     </button>
                   </td>
@@ -145,38 +142,34 @@ export function UsersPanel({
       </div>
 
       {draft && (
-        <div className="mt-5 rounded border bg-gray-50 p-4">
-          <h2 className="text-sm font-semibold">
-            {draft.id ? "Edit user" : "New user"}
-          </h2>
+        <div className="card mt-5 p-4">
+          <div className="eyebrow">{draft.id ? "Edit user" : "New user"}</div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Name</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Name</span>
               <input
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                className="rounded border px-2 py-1"
+                className="field"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Email</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Email</span>
               <input
                 type="email"
                 value={draft.email}
                 onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                className="rounded border px-2 py-1"
+                className="field"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Role</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Role</span>
               <select
                 value={draft.role}
                 disabled={editingSelf}
-                onChange={(e) =>
-                  setDraft({ ...draft, role: e.target.value as Role })
-                }
-                className="rounded border px-2 py-1 disabled:opacity-50"
+                onChange={(e) => setDraft({ ...draft, role: e.target.value as Role })}
+                className="field disabled:opacity-50"
               >
                 {ROLES.map((r) => (
                   <option key={r} value={r}>
@@ -185,7 +178,7 @@ export function UsersPanel({
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2 self-end text-sm">
+            <label className="flex items-center gap-2 self-end text-[0.8125rem]">
               <input
                 type="checkbox"
                 checked={draft.active}
@@ -197,33 +190,30 @@ export function UsersPanel({
           </div>
 
           {editingSelf && (
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-[0.6875rem] text-ink-faint">
               You can&apos;t change your own role or deactivate yourself.
             </p>
           )}
 
           <fieldset className="mt-4">
-            <legend className="text-xs font-medium text-gray-500">
+            <legend className="eyebrow">
               {draft.role === "CFO"
                 ? "Company (CFO must have exactly one)"
                 : "Company access"}
             </legend>
-            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem]">
               {companies.map((c) => (
-                <label key={c.id} className="flex items-center gap-1.5 text-sm">
+                <label key={c.id} className="flex items-center gap-1.5">
                   <input
                     type="checkbox"
                     checked={draft.companyIds.includes(c.id)}
                     onChange={() =>
-                      setDraft({
-                        ...draft,
-                        companyIds: toggle(draft.companyIds, c.id),
-                      })
+                      setDraft({ ...draft, companyIds: toggle(draft.companyIds, c.id) })
                     }
                   />
                   <span>
                     {c.name}
-                    <span className="text-gray-400"> · {c.fundName}</span>
+                    <span className="text-ink-faint"> · {c.fundName}</span>
                   </span>
                 </label>
               ))}
@@ -232,12 +222,10 @@ export function UsersPanel({
 
           {draft.role !== "CFO" && (
             <fieldset className="mt-3">
-              <legend className="text-xs font-medium text-gray-500">
-                Fund access
-              </legend>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+              <legend className="eyebrow">Fund access</legend>
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[0.8125rem]">
                 {funds.map((f) => (
-                  <label key={f.id} className="flex items-center gap-1.5 text-sm">
+                  <label key={f.id} className="flex items-center gap-1.5">
                     <input
                       type="checkbox"
                       checked={draft.fundIds.includes(f.id)}
@@ -249,29 +237,21 @@ export function UsersPanel({
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1.5 text-[0.6875rem] text-ink-faint">
                 Leave everything unchecked for firm-wide access. Per-fund scoping
                 for Partner / Deal Team is stored but not yet enforced (see
-                CLAUDE.md open decision).
+                CLAUDE.md).
               </p>
             </fieldset>
           )}
 
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-3 text-[0.8125rem] text-flag-red">{error}</p>}
 
           <div className="mt-4 flex gap-2">
-            <button
-              onClick={submit}
-              disabled={pending}
-              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button onClick={submit} disabled={pending} className="btn btn-primary">
               {pending ? "Saving…" : "Save"}
             </button>
-            <button
-              onClick={() => setDraft(null)}
-              disabled={pending}
-              className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
-            >
+            <button onClick={() => setDraft(null)} disabled={pending} className="btn">
               Cancel
             </button>
           </div>

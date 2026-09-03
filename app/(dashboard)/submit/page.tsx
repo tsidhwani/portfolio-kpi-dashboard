@@ -10,6 +10,7 @@ import {
   recentPeriodKeys,
 } from "@/lib/periods";
 import { EntryGrid } from "../entry/entry-grid";
+import { PageHeader } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -69,19 +70,20 @@ export default async function SubmitPage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-xl font-semibold">Submit financials</h1>
-      <p className="mt-1 text-sm text-gray-500">
-        {company.name} · {company.fundName}
-      </p>
+      <PageHeader
+        eyebrow={`${company.name} · ${company.fundName}`}
+        title="Submit financials"
+        meta={
+          existing.length > 0
+            ? `${periodLabel(periodKey)} — already submitted, editing`
+            : periodLabel(periodKey)
+        }
+      />
 
-      <form method="GET" className="mt-4 flex items-end gap-3 text-sm">
+      <form method="GET" className="flex items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-gray-500">Reporting month</span>
-          <select
-            name="period"
-            defaultValue={periodKey}
-            className="rounded border px-2 py-1"
-          >
+          <span className="eyebrow">Reporting month</span>
+          <select name="period" defaultValue={periodKey} className="field">
             {periods.map((p) => (
               <option key={p} value={p}>
                 {periodLabel(p)}
@@ -90,17 +92,8 @@ export default async function SubmitPage({
             ))}
           </select>
         </label>
-        <button className="rounded border px-3 py-1 hover:bg-gray-50">Load</button>
+        <button className="btn">Load</button>
       </form>
-
-      <p className="mt-4 text-sm text-gray-500">
-        {periodLabel(periodKey)}
-        {existing.length > 0 && (
-          <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-            already submitted — editing
-          </span>
-        )}
-      </p>
 
       <EntryGrid
         key={`${company.id}:${periodKey}`}
@@ -110,7 +103,7 @@ export default async function SubmitPage({
         initialValues={initialValues}
       />
 
-      <p className="mt-4 text-xs text-gray-400">
+      <p className="mt-4 text-[0.6875rem] text-ink-faint">
         Your entries are recorded as CFO submissions and reviewed by the deal team.
       </p>
     </div>

@@ -93,6 +93,20 @@ firm-wide, CFO restricted to own company. Confirmed by Tapan.")
 entries terse — what was built, not how. Example: "2026-08-27 — Auth wired,
 Google OAuth login working, no User/role attachment yet.")
 
+- 2026-09-02 — Front-end design pass. Requested styling direction: the
+  restraint of a large alternative-asset-manager brand system (institutional,
+  editorial). Tokens in `tailwind.config.ts` + `app/globals.css` — warm
+  ivory canvas, near-black ink, single deep-navy accent, hairline rules,
+  muted status colours (dot + word, never neon), `Newsreader` serif display
+  + `Inter` UI via `next/font`, tabular numerics. Shared primitives in
+  `app/(dashboard)/ui.tsx` (`PageHeader`, `Eyebrow`, `StatusBadge`/
+  `StatusDot`, `VarianceLegend`) and CSS component classes (`.card`,
+  `.btn`/`.btn-primary`, `.field`, `.dt` data-table). New sticky shell with
+  wordmark + active-underline nav (`nav.tsx`). Every dashboard page, the
+  entry grid, admin/KPI/commentary/upload panels, login, and both print
+  reports restyled. Product stays "Meridian / Portfolio KPI Dashboard" —
+  styled in that idiom, not branded as any real firm. No logic change;
+  tsc + build clean, `db:smoke` 40/40.
 - 2026-09-01 — PRD conformance pass (post build-order). Closed the V1
   feature gaps found reviewing against `Portfolio_KPI_Dashboard_PRD.docx`:
   • Commentary write path — `lib/commentary.ts` + `/companies/[id]` inline

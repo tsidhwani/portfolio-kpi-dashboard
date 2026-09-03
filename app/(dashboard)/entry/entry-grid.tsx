@@ -73,52 +73,51 @@ export function EntryGrid({
   }
 
   return (
-    <div className="mt-3">
-      <table className="w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b text-left text-gray-500">
-            <th className="py-2 font-medium">Metric</th>
-            <th className="py-2 font-medium">Actual</th>
-            <th className="py-2 font-medium">Budget</th>
-          </tr>
-        </thead>
-        <tbody>
-          {kpiDefs.map((k) => (
-            <tr key={k.id} className="border-b">
-              <td className="py-2 pr-4">
-                {k.name} <span className="text-gray-400">({k.unit})</span>
-              </td>
-              <td className="py-1 pr-2">
-                <input
-                  inputMode="decimal"
-                  className="w-36 rounded border px-2 py-1"
-                  value={rows[k.id].actual}
-                  onChange={(e) => edit(k.id, "actual", e.target.value)}
-                />
-              </td>
-              <td className="py-1">
-                <input
-                  inputMode="decimal"
-                  className="w-36 rounded border px-2 py-1"
-                  value={rows[k.id].budget}
-                  onChange={(e) => edit(k.id, "budget", e.target.value)}
-                />
-              </td>
+    <div className="mt-6">
+      <div className="card overflow-x-auto">
+        <table className="dt">
+          <thead>
+            <tr>
+              <th className="pl-4">Metric</th>
+              <th className="num">Actual</th>
+              <th className="num pr-4">Budget</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {kpiDefs.map((k) => (
+              <tr key={k.id}>
+                <td className="pl-4">
+                  <span className="font-medium text-ink">{k.name}</span>{" "}
+                  <span className="text-ink-faint">({k.unit})</span>
+                </td>
+                <td className="num">
+                  <input
+                    inputMode="decimal"
+                    className="field w-36 text-right"
+                    value={rows[k.id].actual}
+                    onChange={(e) => edit(k.id, "actual", e.target.value)}
+                  />
+                </td>
+                <td className="num pr-4">
+                  <input
+                    inputMode="decimal"
+                    className="field w-36 text-right"
+                    value={rows[k.id].budget}
+                    onChange={(e) => edit(k.id, "budget", e.target.value)}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       <div className="mt-4 flex items-center gap-3">
-        <button
-          onClick={save}
-          disabled={pending || !dirty}
-          className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
-        >
+        <button onClick={save} disabled={pending || !dirty} className="btn btn-primary">
           {pending ? "Saving…" : "Save"}
         </button>
-        {message && <span className="text-sm text-green-600">{message}</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
+        {message && <span className="text-[0.8125rem] text-flag-green">{message}</span>}
+        {error && <span className="text-[0.8125rem] text-flag-red">{error}</span>}
       </div>
     </div>
   );

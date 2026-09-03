@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/session";
 import { getFundDetail, reportingPeriodKey } from "@/lib/reporting";
 import { periodLabel } from "@/lib/periods";
 import { formatByUnit, formatSignedPct, variancePct } from "@/lib/format";
-import { StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
+import { PageHeader, StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -24,32 +24,30 @@ export default async function FundDetailPage({
   if (!fund || !periodKey) notFound();
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Link href="/funds" className="text-sm text-blue-600 hover:underline">
+    <div>
+      <Link href="/funds" className="text-[0.8125rem] text-ink-soft no-underline hover:text-ink">
         ← Funds
       </Link>
-      <div className="mt-1 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">{fund.name}</h1>
-        <a
-          href={`/api/export/funds/${fund.id}`}
-          className="text-sm text-blue-600 hover:underline"
-        >
-          Export CSV
-        </a>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        Vintage {fund.vintageYear} · {formatByUnit(fund.fundSize, "USD")} committed ·{" "}
-        {fund.status} · as of {periodLabel(periodKey)}
-      </p>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+      <PageHeader
+        eyebrow={`Vintage ${fund.vintageYear} · ${fund.status}`}
+        title={fund.name}
+        meta={`${formatByUnit(fund.fundSize, "USD")} committed · as of ${periodLabel(periodKey)}`}
+        actions={
+          <a href={`/api/export/funds/${fund.id}`} className="btn">
+            Export CSV
+          </a>
+        }
+      />
+
+      <div className="card overflow-x-auto">
+        <table className="dt">
           <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Company</th>
-              <th className="py-2 pr-4 font-medium">Status</th>
+            <tr>
+              <th className="pl-4">Company</th>
+              <th>Status</th>
               {COLUMNS.map((c) => (
-                <th key={c} className="py-2 pr-4 text-right font-medium">
+                <th key={c} className="num">
                   {c}
                 </th>
               ))}
@@ -57,31 +55,31 @@ export default async function FundDetailPage({
           </thead>
           <tbody>
             {fund.companies.map((c) => (
-              <tr key={c.id} className="border-b align-top">
-                <td className="py-2 pr-4">
+              <tr key={c.id}>
+                <td className="pl-4">
                   <Link
                     href={`/companies/${c.id}`}
-                    className="text-blue-600 hover:underline"
+                    className="font-medium text-ink no-underline hover:underline"
                   >
                     {c.name}
                   </Link>
-                  <div className="text-xs text-gray-400">
+                  <div className="mt-0.5 text-[0.6875rem] text-ink-faint">
                     {c.industry} · {c.ownershipPct}% owned
                   </div>
                 </td>
-                <td className="py-2 pr-4">
+                <td>
                   <StatusBadge status={c.computedStatus} />
                 </td>
                 {COLUMNS.map((col) => {
                   const m = c.metrics[col];
                   const v = m ? variancePct(m.actual, m.budget) : null;
                   return (
-                    <td key={col} className="py-2 pr-4 text-right whitespace-nowrap">
-                      {formatByUnit(m?.actual ?? null, m?.unit ?? "")}
+                    <td key={col} className="num">
+                      <div>{formatByUnit(m?.actual ?? null, m?.unit ?? "")}</div>
                       {v != null && (
-                        <span className={`ml-1 text-xs ${flagTextClass(m?.flag)}`}>
+                        <div className={`text-[0.6875rem] ${flagTextClass(m?.flag)}`}>
                           {formatSignedPct(v)}
-                        </span>
+                        </div>
                       )}
                     </td>
                   );
@@ -91,12 +89,13 @@ export default async function FundDetailPage({
           </tbody>
         </table>
       </div>
+
       <div className="mt-3">
         <VarianceLegend />
       </div>
-      <p className="mt-2 text-xs text-gray-400">
-        Percentages are actual vs. budget for the period. Status is the worst
-        financial-KPI variance flag for the period (manual status as fallback).
+      <p className="mt-2 text-[0.6875rem] text-ink-faint">
+        Figures are the period actual with variance to budget beneath. Status is
+        the worst financial-KPI flag for the period.
       </p>
     </div>
   );

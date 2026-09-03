@@ -77,57 +77,47 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
   }
 
   return (
-    <div className="mt-5">
+    <div className="mt-2">
       <div className="flex justify-end">
-        <button
-          onClick={() => open(blank())}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-50"
-        >
+        <button onClick={() => open(blank())} className="btn">
           + Add KPI
         </button>
       </div>
 
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+      <div className="card mt-2 overflow-x-auto">
+        <table className="dt">
           <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Name</th>
-              <th className="py-2 pr-4 font-medium">Category</th>
-              <th className="py-2 pr-4 font-medium">Unit</th>
-              <th className="py-2 pr-4 font-medium">Cadence</th>
-              <th className="py-2 pr-4 font-medium">Applies to</th>
-              <th className="py-2 pr-4 font-medium">Values</th>
-              <th className="py-2 font-medium" />
+            <tr>
+              <th className="pl-4">Name</th>
+              <th>Category</th>
+              <th>Unit</th>
+              <th>Cadence</th>
+              <th>Applies to</th>
+              <th className="num">Values</th>
+              <th className="pr-4" />
             </tr>
           </thead>
           <tbody>
             {kpis.map((k) => (
-              <tr key={k.id} className={`border-b ${k.retired ? "text-gray-400" : ""}`}>
-                <td className="py-2 pr-4">
-                  {k.name}
-                  {k.isCustom && (
-                    <span className="ml-1 text-xs text-gray-400">custom</span>
-                  )}
-                  {k.retired && (
-                    <span className="ml-1 text-xs text-gray-400">· retired</span>
-                  )}
+              <tr key={k.id} className={k.retired ? "text-ink-faint" : ""}>
+                <td className="pl-4">
+                  <span className={k.retired ? "" : "font-medium text-ink"}>{k.name}</span>
+                  {k.isCustom && <span className="ml-1.5 text-[0.6875rem] text-ink-faint">custom</span>}
+                  {k.retired && <span className="ml-1.5 text-[0.6875rem] text-ink-faint">· retired</span>}
                 </td>
-                <td className="py-2 pr-4">{k.category}</td>
-                <td className="py-2 pr-4">{k.unit}</td>
-                <td className="py-2 pr-4">{k.cadence}</td>
-                <td className="py-2 pr-4">{k.appliesTo ?? "all"}</td>
-                <td className="py-2 pr-4">{k.valueCount}</td>
-                <td className="py-2 text-right whitespace-nowrap">
-                  <button
-                    onClick={() => open(toDraft(k))}
-                    className="text-blue-600 hover:underline"
-                  >
+                <td className="text-ink-soft">{k.category}</td>
+                <td className="text-ink-soft">{k.unit}</td>
+                <td className="text-ink-soft">{k.cadence}</td>
+                <td className="text-ink-soft">{k.appliesTo ?? "all"}</td>
+                <td className="num text-ink-soft">{k.valueCount}</td>
+                <td className="num whitespace-nowrap pr-4">
+                  <button onClick={() => open(toDraft(k))} className="text-link hover:underline">
                     Edit
                   </button>
                   <button
                     onClick={() => save({ ...toDraft(k), retired: !k.retired })}
                     disabled={pending}
-                    className="ml-3 text-blue-600 hover:underline disabled:opacity-50"
+                    className="ml-3 text-link hover:underline disabled:opacity-50"
                   >
                     {k.retired ? "Restore" : "Retire"}
                   </button>
@@ -139,28 +129,24 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
       </div>
 
       {draft && (
-        <div className="mt-5 rounded border bg-gray-50 p-4">
-          <h2 className="text-sm font-semibold">
-            {draft.id ? "Edit KPI" : "New KPI"}
-          </h2>
+        <div className="card mt-5 p-4">
+          <div className="eyebrow">{draft.id ? "Edit KPI" : "New KPI"}</div>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Name</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Name</span>
               <input
                 value={draft.name}
                 onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                className="rounded border px-2 py-1"
+                className="field"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Category</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Category</span>
               <select
                 value={draft.category}
-                onChange={(e) =>
-                  setDraft({ ...draft, category: e.target.value as Category })
-                }
-                className="rounded border px-2 py-1"
+                onChange={(e) => setDraft({ ...draft, category: e.target.value as Category })}
+                className="field"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -169,39 +155,37 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Unit</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Unit</span>
               <input
                 value={draft.unit}
                 onChange={(e) => setDraft({ ...draft, unit: e.target.value })}
                 placeholder="USD, %, FTEs, count"
-                className="rounded border px-2 py-1"
+                className="field"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="text-gray-500">Cadence</span>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Cadence</span>
               <input
                 value={draft.cadence}
                 onChange={(e) => setDraft({ ...draft, cadence: e.target.value })}
-                className="rounded border px-2 py-1"
+                className="field"
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-              <span className="text-gray-500">
-                Applies to industry <span className="text-gray-400">(blank = all)</span>
-              </span>
+            <label className="flex flex-col gap-1 sm:col-span-2">
+              <span className="eyebrow">Applies to industry (blank = all)</span>
               <input
                 value={draft.appliesTo}
                 onChange={(e) => setDraft({ ...draft, appliesTo: e.target.value })}
                 placeholder="e.g. Fintech"
-                className="rounded border px-2 py-1"
+                className="field"
               />
             </label>
           </div>
 
-          <div className="mt-3 flex flex-col gap-2">
+          <div className="mt-3 flex flex-col gap-2 text-[0.8125rem]">
             {!draft.id && (
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={draft.isCustom}
@@ -211,7 +195,7 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
               </label>
             )}
             {draft.id && (
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={draft.retired}
@@ -222,21 +206,13 @@ export function KpiPanel({ kpis }: { kpis: KpiRow[] }) {
             )}
           </div>
 
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+          {error && <p className="mt-3 text-[0.8125rem] text-flag-red">{error}</p>}
 
           <div className="mt-4 flex gap-2">
-            <button
-              onClick={() => draft && save(draft)}
-              disabled={pending}
-              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button onClick={() => draft && save(draft)} disabled={pending} className="btn btn-primary">
               {pending ? "Saving…" : "Save"}
             </button>
-            <button
-              onClick={() => setDraft(null)}
-              disabled={pending}
-              className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
-            >
+            <button onClick={() => setDraft(null)} disabled={pending} className="btn">
               Cancel
             </button>
           </div>

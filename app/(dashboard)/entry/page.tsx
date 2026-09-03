@@ -9,6 +9,7 @@ import {
   recentPeriodKeys,
 } from "@/lib/periods";
 import { EntryGrid } from "./entry-grid";
+import { PageHeader } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function EntryPage({
   const companies = await getEditableCompanies(user);
   if (companies.length === 0) {
     return (
-      <p className="text-sm text-gray-600">
+      <p className="text-[0.8125rem] text-ink-soft">
         You don&apos;t have edit access to any company.
       </p>
     );
@@ -56,17 +57,17 @@ export default async function EntryPage({
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-xl font-semibold">Monthly Entry</h1>
+    <div>
+      <PageHeader
+        eyebrow="Deal team"
+        title="Monthly Entry"
+        meta={`${company.name} · ${periodLabel(periodKey)}`}
+      />
 
-      <form method="GET" className="mt-4 flex flex-wrap items-end gap-3 text-sm">
+      <form method="GET" className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-gray-500">Company</span>
-          <select
-            name="company"
-            defaultValue={companyId}
-            className="rounded border px-2 py-1"
-          >
+          <span className="eyebrow">Company</span>
+          <select name="company" defaultValue={companyId} className="field">
             {companies.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} — {c.fundName}
@@ -75,12 +76,8 @@ export default async function EntryPage({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-gray-500">Month</span>
-          <select
-            name="period"
-            defaultValue={periodKey}
-            className="rounded border px-2 py-1"
-          >
+          <span className="eyebrow">Month</span>
+          <select name="period" defaultValue={periodKey} className="field">
             {periods.map((p) => (
               <option key={p} value={p}>
                 {periodLabel(p)}
@@ -88,13 +85,8 @@ export default async function EntryPage({
             ))}
           </select>
         </label>
-        <button className="rounded border px-3 py-1 hover:bg-gray-50">Load</button>
+        <button className="btn">Load</button>
       </form>
-
-      <p className="mt-4 text-sm text-gray-500">
-        {company.name} · {periodLabel(periodKey)} ·{" "}
-        <span className="uppercase">{company.status}</span>
-      </p>
 
       <EntryGrid
         key={`${companyId}:${periodKey}`}

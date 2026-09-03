@@ -40,30 +40,22 @@ export function DocumentUpload({ companyId }: { companyId: string }) {
     <form
       ref={formRef}
       onSubmit={onSubmit}
-      className="mt-3 flex flex-wrap items-center gap-2 rounded border bg-gray-50 p-3 text-sm"
+      className="card mt-3 flex flex-wrap items-center gap-2 p-3.5 text-[0.8125rem]"
     >
-      <input
-        type="file"
-        name="file"
-        required
-        className="max-w-[16rem] text-xs"
-      />
-      <select name="category" defaultValue="report" className="rounded border px-2 py-1">
+      <input type="file" name="file" required className="max-w-[16rem] text-[0.75rem]" />
+      <select name="category" defaultValue="report" className="field">
         {CATEGORIES.map((c) => (
           <option key={c.value} value={c.value}>
             {c.label}
           </option>
         ))}
       </select>
-      <button
-        disabled={pending}
-        className="rounded bg-blue-600 px-3 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
-      >
+      <button disabled={pending} className="btn btn-primary">
         {pending ? "Uploading…" : "Upload"}
       </button>
-      <span className="text-xs text-gray-400">PDF/Office/CSV/image, ≤ 20 MB</span>
-      {msg && <span className="text-xs text-green-700">{msg}</span>}
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      <span className="text-[0.6875rem] text-ink-faint">PDF / Office / CSV / image, ≤ 20 MB</span>
+      {msg && <span className="text-[0.75rem] text-flag-green">{msg}</span>}
+      {error && <span className="text-[0.75rem] text-flag-red">{error}</span>}
     </form>
   );
 }

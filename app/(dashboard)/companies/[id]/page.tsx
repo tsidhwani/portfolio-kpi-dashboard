@@ -5,7 +5,7 @@ import { canEditCommentary, canUploadDocuments } from "@/lib/rbac";
 import { getCompanyDetail } from "@/lib/reporting";
 import { periodLabel, periodShortLabel } from "@/lib/periods";
 import { formatByUnit, formatSignedPct } from "@/lib/format";
-import { StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
+import { PageHeader, StatusBadge, VarianceLegend, flagTextClass } from "../../ui";
 import { CommentaryEditor } from "./commentary-editor";
 import { DocumentUpload } from "./document-upload";
 
@@ -29,7 +29,17 @@ function TrendLine({
   if (t.mom != null) parts.push(`MoM ${formatSignedPct(t.mom)}`);
   if (t.qoq != null) parts.push(`QoQ ${formatSignedPct(t.qoq)}`);
   if (t.yoy != null) parts.push(`YoY ${formatSignedPct(t.yoy)}`);
-  return <div className="text-xs font-normal text-gray-400">{parts.join(" · ")}</div>;
+  return (
+    <div className="mt-0.5 text-[0.6875rem] font-normal text-ink-faint">
+      {parts.join("  ·  ")}
+    </div>
+  );
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 mt-10 border-b border-line pb-2 text-lg">{children}</h2>
+  );
 }
 
 export default async function CompanyDetailPage({
@@ -55,60 +65,58 @@ export default async function CompanyDetailPage({
   const commentPeriods = d.periodKeys.map((k) => ({ key: k, label: periodLabel(k) }));
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div>
       {firmWide && (
-        <Link href="/funds" className="text-sm text-blue-600 hover:underline">
-          ← Funds
+        <Link
+          href={`/funds/${d.fund.id}`}
+          className="text-[0.8125rem] text-ink-soft no-underline hover:text-ink"
+        >
+          ← {d.fund.name}
         </Link>
       )}
-      <div className="mt-1 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold">{d.name}</h1>
-          <StatusBadge status={d.computedStatus} />
-        </div>
-        <div className="flex gap-3 text-sm">
-          <a
-            href={`/api/export/companies/${d.id}`}
-            className="text-blue-600 hover:underline"
-          >
-            Export CSV
-          </a>
-          <Link
-            href={`/companies/${d.id}/report`}
-            className="text-blue-600 hover:underline"
-          >
-            Printable report
-          </Link>
-        </div>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        {d.industry} ·{" "}
-        {firmWide ? (
-          <Link href={`/funds/${d.fund.id}`} className="text-blue-600 hover:underline">
-            {d.fund.name}
-          </Link>
-        ) : (
-          d.fund.name
-        )}{" "}
-        · {d.ownershipPct}% owned · invested {utcDate(d.investmentDate)}
-      </p>
 
-      <h2 className="mt-6 text-sm font-semibold text-gray-700">
-        KPI history — actual over budget, last {d.periodKeys.length} months
-      </h2>
-      <div className="mt-1">
+      <PageHeader
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <StatusBadge status={d.computedStatus} />
+          </span>
+        }
+        title={d.name}
+        meta={
+          <>
+            {d.industry} · {firmWide ? d.fund.name : d.fund.name} ·{" "}
+            {d.ownershipPct}% owned · invested {utcDate(d.investmentDate)}
+          </>
+        }
+        actions={
+          <>
+            <a href={`/api/export/companies/${d.id}`} className="btn">
+              Export CSV
+            </a>
+            <Link href={`/companies/${d.id}/report`} className="btn no-underline">
+              Printable report
+            </Link>
+          </>
+        }
+      />
+
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg">KPI history</h2>
+        <span className="text-[0.75rem] text-ink-faint">
+          actual over budget · last {d.periodKeys.length} months
+        </span>
+      </div>
+      <div className="mt-1.5">
         <VarianceLegend />
       </div>
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
+
+      <div className="card mt-3 overflow-x-auto">
+        <table className="dt">
           <thead>
-            <tr className="border-b text-left text-gray-500">
-              <th className="py-2 pr-4 font-medium">Metric</th>
+            <tr>
+              <th className="pl-4">Metric</th>
               {d.periodKeys.map((k) => (
-                <th
-                  key={k}
-                  className="py-2 pr-4 text-right font-medium whitespace-nowrap"
-                >
+                <th key={k} className="num">
                   {periodShortLabel(k)}
                 </th>
               ))}
@@ -116,29 +124,27 @@ export default async function CompanyDetailPage({
           </thead>
           <tbody>
             {d.kpiDefs.map((kpi) => (
-              <tr key={kpi.id} className="border-b">
-                <td className="py-2 pr-4 whitespace-nowrap font-medium">
-                  {kpi.name} <span className="text-gray-400">({kpi.unit})</span>
+              <tr key={kpi.id}>
+                <td className="pl-4 align-top">
+                  <span className="font-medium text-ink">{kpi.name}</span>{" "}
+                  <span className="text-ink-faint">({kpi.unit})</span>
                   <TrendLine t={d.trend[kpi.id]} />
                 </td>
                 {d.periodKeys.map((k) => {
                   const cell = d.grid[kpi.id]?.[k];
                   return (
-                    <td
-                      key={k}
-                      className="py-2 pr-4 text-right whitespace-nowrap"
-                    >
+                    <td key={k} className="num align-top">
                       {cell && (cell.actual != null || cell.budget != null) ? (
                         <>
                           <div className={flagTextClass(cell.flag)}>
                             {formatByUnit(cell.actual, kpi.unit)}
                           </div>
-                          <div className="text-xs text-gray-400">
+                          <div className="text-[0.6875rem] text-ink-faint">
                             {formatByUnit(cell.budget, kpi.unit)}
                           </div>
                         </>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-ink-faint">—</span>
                       )}
                     </td>
                   );
@@ -148,53 +154,47 @@ export default async function CompanyDetailPage({
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-gray-400">
+      <p className="mt-2 text-[0.6875rem] text-ink-faint">
         MoM / QoQ / YoY compare the latest month&apos;s actual to 1 / 3 / 12 months prior.
       </p>
 
-      <h2 className="mt-6 text-sm font-semibold text-gray-700">Commentary</h2>
+      <SectionHeading>Commentary</SectionHeading>
       {mayComment && (
-        <CommentaryEditor
-          companyId={d.id}
-          periods={commentPeriods}
-          myNotes={myNotes}
-        />
+        <CommentaryEditor companyId={d.id} periods={commentPeriods} myNotes={myNotes} />
       )}
       {d.commentary.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-400">No commentary.</p>
+        <p className="mt-3 text-[0.8125rem] text-ink-faint">No commentary.</p>
       ) : (
-        <ul className="mt-3 space-y-3">
+        <ul className="mt-4 space-y-4">
           {d.commentary.map((c) => (
-            <li key={c.id} className="text-sm">
-              <div className="text-xs text-gray-400">
+            <li key={c.id} className="border-l-2 border-line-strong pl-3 text-[0.8125rem]">
+              <div className="eyebrow mb-1">
                 {periodLabel(c.periodKey)} · {c.author}
               </div>
-              <div className="whitespace-pre-wrap">{c.body}</div>
+              <div className="whitespace-pre-wrap text-ink">{c.body}</div>
             </li>
           ))}
         </ul>
       )}
 
-      <h2 className="mt-6 text-sm font-semibold text-gray-700">Documents</h2>
+      <SectionHeading>Documents</SectionHeading>
       {mayUpload && <DocumentUpload companyId={d.id} />}
       {d.documents.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-400">No documents.</p>
+        <p className="mt-3 text-[0.8125rem] text-ink-faint">No documents.</p>
       ) : (
-        <ul className="mt-3 space-y-1 text-sm">
+        <ul className="mt-4 divide-y divide-line card">
           {d.documents.map((doc) => (
-            <li key={doc.id} className="flex flex-wrap items-center gap-2">
-              <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-                {doc.category}
-              </span>
+            <li key={doc.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-[0.8125rem]">
+              <span className="eyebrow w-20 shrink-0">{doc.category.replace("_", " ")}</span>
               <a
                 href={`/api/documents/${doc.id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-600 hover:underline"
+                className="text-ink no-underline hover:underline"
               >
                 {doc.filename}
               </a>
-              <span className="text-xs text-gray-400">
+              <span className="ml-auto text-[0.6875rem] text-ink-faint">
                 {utcDate(doc.uploadedAt)} · {doc.uploader}
               </span>
             </li>

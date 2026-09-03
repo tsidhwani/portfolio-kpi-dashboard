@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/session";
 import { canManageUsers } from "@/lib/rbac";
 import { listUsers, getScopeOptions } from "@/lib/admin";
 import { UsersPanel } from "./users-panel";
+import { PageHeader } from "../ui";
 
 export const dynamic = "force-dynamic";
 
@@ -18,18 +19,17 @@ export default async function AdminUsersPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Admin · Users</h1>
-        <Link href="/kpis" className="text-sm text-blue-600 hover:underline">
-          KPI template library →
-        </Link>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        Provision accounts and assign role + access. A user must exist here
-        before they can sign in. Deactivating blocks sign-in on the next
-        request without deleting history.
-      </p>
+    <div>
+      <PageHeader
+        eyebrow="Administration"
+        title="Users"
+        meta="Provision accounts and assign role + access. A user must exist here before they can sign in. Deactivating blocks sign-in on the next request without deleting history."
+        actions={
+          <Link href="/kpis" className="btn no-underline">
+            KPI template library →
+          </Link>
+        }
+      />
 
       <UsersPanel
         currentUserId={user.id}

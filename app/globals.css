@@ -2,6 +2,139 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Newsreader", ui-serif, Georgia, serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: theme("colors.ink.DEFAULT");
+  }
+
+  /* Numeric columns line up. */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    color: theme("colors.link");
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+}
+
+@layer components {
+  /* Small uppercase section label. */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: theme("colors.ink.faint");
+  }
+
+  .card {
+    background: theme("colors.paper");
+    border: 1px solid theme("colors.line.DEFAULT");
+    border-radius: 2px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 2px;
+    border: 1px solid theme("colors.line.strong");
+    background: theme("colors.paper");
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: theme("colors.ink.DEFAULT");
+    transition:
+      background-color 0.12s ease,
+      border-color 0.12s ease;
+  }
+  .btn:hover {
+    background: theme("colors.canvas");
+    text-decoration: none;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: theme("colors.accent.DEFAULT");
+    border-color: theme("colors.accent.DEFAULT");
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background: theme("colors.accent.700");
+    border-color: theme("colors.accent.700");
+  }
+
+  .field {
+    border: 1px solid theme("colors.line.strong");
+    border-radius: 2px;
+    background: theme("colors.paper");
+    padding: 0.375rem 0.5rem;
+    font-size: 0.8125rem;
+    color: theme("colors.ink.DEFAULT");
+  }
+  .field:focus {
+    outline: 2px solid theme("colors.accent.DEFAULT");
+    outline-offset: -1px;
+  }
+
+  /* Data tables */
+  .dt {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+  }
+  .dt thead th {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: theme("colors.ink.faint");
+    text-align: left;
+    padding: 0.5rem 1rem 0.5rem 0;
+    border-bottom: 1px solid theme("colors.line.strong");
+    white-space: nowrap;
+  }
+  .dt tbody td {
+    padding: 0.625rem 1rem 0.625rem 0;
+    border-bottom: 1px solid theme("colors.line.DEFAULT");
+    vertical-align: top;
+  }
+  .dt tbody tr:hover td {
+    background: rgba(27, 42, 68, 0.025);
+  }
+  .dt .num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /* Print-to-PDF: the /report views are the Phase-1 "PDF export". Strip the
    app chrome and links so a browser "Save as PDF" produces a clean sheet. */
 @media print {
@@ -18,5 +151,8 @@
   a {
     color: inherit !important;
     text-decoration: none !important;
+  }
+  .card {
+    border: none !important;
   }
 }
